@@ -92,11 +92,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * Deletes all users with unverified emails older than the specified date.
      * Can be used for cleanup of abandoned registrations.
      *
-     * @param daysOld number of days old the account must be
+     * @param cutoffDate the cutoff date (accounts created before this will be deleted)
      * @return the number of users deleted
      */
-    @Query("DELETE FROM User u WHERE u.emailVerified = false AND u.createdAt < CURRENT_TIMESTAMP - :daysOld * INTERVAL '1 day'")
-    int deleteUnverifiedUsersOlderThan(@Param("daysOld") int daysOld);
+    @Query("DELETE FROM User u WHERE u.emailVerified = false AND u.createdAt < :cutoffDate")
+    int deleteUnverifiedUsersOlderThan(@Param("cutoffDate") java.time.LocalDateTime cutoffDate);
 
     /**
      * Updates the failed login attempts for a user.
@@ -112,17 +112,25 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * Finds users whose password reset tokens are about to expire.
      * Can be used for sending reminder emails.
      *
+     * @param startTime the start of the time window
+     * @param endTime the end of the time window
      * @return a list of users with expiring reset tokens
      */
-    @Query("SELECT u FROM User u WHERE u.passwordResetToken IS NOT NULL AND u.passwordResetExpiresAt BETWEEN CURRENT_TIMESTAMP AND CURRENT_TIMESTAMP + INTERVAL '1 hour'")
-    java.util.List<User> findUsersWithExpiringPasswordResetTokens();
+    @Query("SELECT u FROM User u WHERE u.passwordResetToken IS NOT NULL AND u.passwordResetExpiresAt BETWEEN :startTime AND :endTime")
+    java.util.List<User> findUsersWithExpiringPasswordResetTokens(
+            @Param("startTime") java.time.LocalDateTime startTime,
+            @Param("endTime") java.time.LocalDateTime endTime);
 
     /**
      * Finds users whose email verification tokens are about to expire.
      * Can be used for sending reminder emails.
      *
+     * @param startTime the start of the time window
+     * @param endTime the end of the time window
      * @return a list of users with expiring verification tokens
      */
-    @Query("SELECT u FROM User u WHERE u.emailVerificationToken IS NOT NULL AND u.emailVerificationExpiresAt BETWEEN CURRENT_TIMESTAMP AND CURRENT_TIMESTAMP + INTERVAL '24 hours'")
-    java.util.List<User> findUsersWithExpiringEmailVerificationTokens();
+    @Query("SELECT u FROM User u WHERE u.emailVerificationToken IS NOT NULL AND u.emailVerificationExpiresAt BETWEEN :startTime AND :endTime")
+    java.util.List<User> findUsersWithExpiringEmailVerificationTokens(
+            @Param("startTime") java.time.LocalDateTime startTime,
+            @Param("endTime") java.time.LocalDateTime endTime);
 }

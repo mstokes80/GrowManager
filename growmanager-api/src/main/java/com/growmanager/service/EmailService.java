@@ -148,15 +148,19 @@ public class EmailService {
      * @throws MessagingException if email fails to send
      */
     private void sendHtmlEmail(String to, String subject, String htmlContent) throws MessagingException {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-        helper.setFrom(emailFrom, emailFromName);
-        helper.setTo(to);
-        helper.setSubject(subject);
-        helper.setText(htmlContent, true);
+            helper.setFrom(emailFrom, emailFromName);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
 
-        mailSender.send(message);
-        logger.debug("HTML email sent to: {}", to);
+            mailSender.send(message);
+            logger.debug("HTML email sent to: {}", to);
+        } catch (jakarta.mail.internet.AddressException | java.io.UnsupportedEncodingException e) {
+            throw new MessagingException("Failed to create email message", e);
+        }
     }
 }
