@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!--
+        SpotBugs Exclusion Configuration for GrowManager API
+        This file defines patterns for excluding specific bugs from SpotBugs analysis
+    -->
+
+    <!-- Exclude generated code -->
+    <Match>
+        <Class name="~.*\..*Application"/>
+        <Bug pattern="SPRING_BOOT_APPLICATION"/>
+    </Match>
+
+    <!-- Exclude configuration classes -->
+    <Match>
+        <Class name="~.*Config"/>
+        <Bug pattern="UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+    </Match>
+
+    <!-- Exclude DTOs and entities - they often have public fields -->
+    <Match>
+        <Or>
+            <Class name="~.*\.dto\..*"/>
+            <Class name="~.*\.entity\..*"/>
+            <Class name="~.*\.model\..*"/>
+        </Or>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- Exclude Lombok generated methods -->
+    <Match>
+        <Bug pattern="EQ_DOESNT_OVERRIDE_EQUALS"/>
+        <Or>
+            <Class name="~.*\.dto\..*"/>
+            <Class name="~.*\.entity\..*"/>
+            <Class name="~.*\.model\..*"/>
+        </Or>
+    </Match>
+
+    <!-- Exclude test classes -->
+    <Match>
+        <Class name="~.*Test"/>
+    </Match>
+
+    <Match>
+        <Class name="~.*Tests"/>
+    </Match>
+
+    <!-- Exclude specific false positives for Spring components -->
+    <Match>
+        <Bug pattern="UWF_UNWRITTEN_FIELD"/>
+        <Or>
+            <Annotation name="org.springframework.beans.factory.annotation.Autowired"/>
+            <Annotation name="org.springframework.beans.factory.annotation.Value"/>
+            <Annotation name="javax.inject.Inject"/>
+        </Or>
+    </Match>
+
+    <!-- Exclude serialization warnings for JPA entities -->
+    <Match>
+        <Class name="~.*\.entity\..*"/>
+        <Bug pattern="SE_BAD_FIELD,SE_NO_SERIALVERSIONID"/>
+    </Match>
+</FindBugsFilter>

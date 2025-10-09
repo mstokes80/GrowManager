@@ -10,7 +10,11 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "type-check": "tsc --noEmit"
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "prepare": "husky install"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -41,8 +45,21 @@
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
     "vitest": "^1.0.4",
+    "@vitest/coverage-v8": "^1.0.4",
     "@testing-library/react": "^14.1.2",
     "@testing-library/jest-dom": "^6.1.5",
-    "jsdom": "^23.0.1"
+    "jsdom": "^23.0.1",
+    "prettier": "^3.1.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
   }
 }
