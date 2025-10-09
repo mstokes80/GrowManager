@@ -72,3 +72,5 @@ dump.rdb
 
 # MinIO / S3
 .minio.sys/
+/agent-os/
+/.claude/
