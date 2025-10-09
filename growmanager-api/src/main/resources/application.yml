@@ -69,8 +69,29 @@ spring:
 
   security:
     jwt:
-      secret: ${JWT_SECRET:dev-secret-key-change-in-production-minimum-256-bits}
-      expiration: 86400000 # 24 hours
+      secret: ${JWT_SECRET:dev-secret-key-change-in-production-minimum-256-bits-long-for-security}
+      access-token-expiration: 900000 # 15 minutes
+      refresh-token-expiration: 604800000 # 7 days
+      refresh-token-expiration-remember-me: 2592000000 # 30 days
+
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+# Application Configuration
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  email:
+    from: ${EMAIL_FROM:noreply@growmanager.com}
+    from-name: ${EMAIL_FROM_NAME:GrowManager}
 
 # MinIO/S3 Configuration
 minio:
@@ -116,8 +137,20 @@ spring:
 
   security:
     jwt:
-      secret: test-secret-key-for-testing-purposes-only-minimum-256-bits
-      expiration: 3600000 # 1 hour
+      secret: test-secret-key-for-testing-purposes-only-minimum-256-bits-long-for-security
+      access-token-expiration: 900000 # 15 minutes
+      refresh-token-expiration: 604800000 # 7 days
+      refresh-token-expiration-remember-me: 2592000000 # 30 days
+
+  mail:
+    host: localhost
+    port: 1025
+
+app:
+  frontend-url: http://localhost:5173
+  email:
+    from: noreply@growmanager.com
+    from-name: GrowManager
 
 minio:
   endpoint: http://localhost:9000
@@ -161,7 +194,30 @@ spring:
   security:
     jwt:
       secret: ${JWT_SECRET}
-      expiration: 86400000 # 24 hours
+      access-token-expiration: 900000 # 15 minutes
+      refresh-token-expiration: 604800000 # 7 days
+      refresh-token-expiration-remember-me: 2592000000 # 30 days
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: ${MAIL_HOST}
+
+app:
+  frontend-url: ${FRONTEND_URL}
+  email:
+    from: ${EMAIL_FROM}
+    from-name: ${EMAIL_FROM_NAME:GrowManager}
 
 minio:
   endpoint: ${MINIO_ENDPOINT}
