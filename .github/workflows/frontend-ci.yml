@@ -70,7 +70,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: frontend-coverage
@@ -107,7 +107,7 @@ jobs:
         run: npm run build
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: growmanager-ui-dist
           path: growmanager-ui/dist/

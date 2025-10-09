@@ -51,14 +51,14 @@ jobs:
           generate-summary: true
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage-report
           path: growmanager-api/target/site/jacoco/
 
       - name: Upload test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-results
@@ -99,14 +99,14 @@ jobs:
         run: mvn spotbugs:check
 
       - name: Upload Checkstyle report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: checkstyle-report
           path: growmanager-api/target/checkstyle-result.xml
 
       - name: Upload SpotBugs report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: spotbugs-report
@@ -133,7 +133,7 @@ jobs:
         run: mvn clean package -DskipTests
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: growmanager-api-jar
           path: growmanager-api/target/*.jar
