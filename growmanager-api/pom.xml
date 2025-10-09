@@ -27,6 +27,7 @@
         <jacoco.version>0.8.11</jacoco.version>
         <checkstyle.version>10.12.5</checkstyle.version>
         <spotbugs.version>4.8.2.0</spotbugs.version>
+        <sonar.organization>mstokes80</sonar.organization>
     </properties>
 
     <dependencies>
