@@ -84,7 +84,7 @@ class UserRepositoryTest {
         // Try to save another user with same email
         User duplicateUser = User.builder()
                 .email("test@example.com") // Same email
-                .passwordHash("$2a$10$different.hash")
+                .passwordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")
                 .displayName("Another User")
                 .role(User.Role.USER)
                 .timezone("UTC")
@@ -106,7 +106,7 @@ class UserRepositoryTest {
         for (int i = 0; i < 5; i++) {
             User user = User.builder()
                     .email("user" + i + "@example.com")
-                    .passwordHash("$2a$10$hash" + i)
+                    .passwordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")
                     .displayName("User " + i)
                     .role(User.Role.USER)
                     .timezone("UTC")
@@ -162,7 +162,7 @@ class UserRepositoryTest {
         // When role is not explicitly set, it defaults to USER
         User user = User.builder()
                 .email("default@example.com")
-                .passwordHash("$2a$10$hash")
+                .passwordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")
                 .displayName("Default User")
                 .timezone("UTC")
                 .build();
@@ -178,7 +178,7 @@ class UserRepositoryTest {
     void testEmailVerifiedDefaultValue() {
         User user = User.builder()
                 .email("notverified@example.com")
-                .passwordHash("$2a$10$hash")
+                .passwordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")
                 .displayName("Unverified User")
                 .timezone("UTC")
                 .role(User.Role.USER)
@@ -195,7 +195,7 @@ class UserRepositoryTest {
     void testFailedLoginAttemptsDefaultValue() {
         User user = User.builder()
                 .email("newuser@example.com")
-                .passwordHash("$2a$10$hash")
+                .passwordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")
                 .displayName("New User")
                 .timezone("UTC")
                 .role(User.Role.USER)
@@ -274,7 +274,7 @@ class UserRepositoryTest {
     void testEmailValidation() {
         User invalidEmailUser = User.builder()
                 .email("invalid-email") // Invalid email format
-                .passwordHash("$2a$10$hash")
+                .passwordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")
                 .displayName("Invalid Email User")
                 .role(User.Role.USER)
                 .timezone("UTC")
@@ -291,7 +291,7 @@ class UserRepositoryTest {
     void testEmailNotNull() {
         User nullEmailUser = User.builder()
                 .email(null) // Null email
-                .passwordHash("$2a$10$hash")
+                .passwordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")
                 .displayName("Null Email User")
                 .role(User.Role.USER)
                 .timezone("UTC")
@@ -356,7 +356,7 @@ class UserRepositoryTest {
         // Test USER role
         User userRole = User.builder()
                 .email("user@example.com")
-                .passwordHash("$2a$10$hash")
+                .passwordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")
                 .displayName("Regular User")
                 .role(User.Role.USER)
                 .timezone("UTC")
@@ -368,7 +368,7 @@ class UserRepositoryTest {
         // Test ADMIN role
         User adminRole = User.builder()
                 .email("admin@example.com")
-                .passwordHash("$2a$10$hash")
+                .passwordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")
                 .displayName("Admin User")
                 .role(User.Role.ADMIN)
                 .timezone("UTC")

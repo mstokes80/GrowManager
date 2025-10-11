@@ -1,40 +1,91 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from '@/components/ui/toaster';
+import { useEffect } from 'react';
+import { useUIStore } from '@/stores/uiStore';
+import { ErrorBoundary } from '@/components/utility/ErrorBoundary';
+import { ProtectedRoute } from '@/components/routing/ProtectedRoute';
+import { VerifiedRoute } from '@/components/routing/VerifiedRoute';
+import { AuthLayout } from '@/components/layouts/AuthLayout';
+import { AppLayout } from '@/components/layouts/AppLayout';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-})
+// Auth Pages
+import { LoginPage } from '@/pages/auth/LoginPage';
+import { RegisterPage } from '@/pages/auth/RegisterPage';
+import { VerifyEmailPage } from '@/pages/auth/VerifyEmailPage';
+import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
+
+// App Pages
+import { DashboardPage } from '@/pages/DashboardPage';
+import { GrowsListPage } from '@/pages/GrowsListPage';
+import { GrowDetailPage } from '@/pages/GrowDetailPage';
+import { PlantsListPage } from '@/pages/PlantsListPage';
+import { PlantDetailPage } from '@/pages/PlantDetailPage';
+import { CultivarsListPage } from '@/pages/CultivarsListPage';
+import { CultivarDetailPage } from '@/pages/CultivarDetailPage';
+import { LogActivityPage } from '@/pages/LogActivityPage';
+import { ProfilePage } from '@/pages/ProfilePage';
+import { SettingsPage } from '@/pages/SettingsPage';
+import { NotFound } from '@/pages/NotFound';
 
 function App() {
+  const setTheme = useUIStore((state) => state.setTheme);
+
+  useEffect(() => {
+    // Initialize theme on mount
+    const savedTheme = useUIStore.getState().theme;
+    setTheme(savedTheme);
+  }, [setTheme]);
+
   return (
-    <QueryClientProvider client={queryClient}>
+    <ErrorBoundary>
       <BrowserRouter>
-        <div className="min-h-screen bg-background">
-          <div className="container mx-auto px-4 py-8">
-            <h1 className="text-4xl font-bold text-primary">
-              GrowManager
-            </h1>
-            <p className="mt-4 text-muted-foreground">
-              Cannabis Grow Journal & Analytics Platform
-            </p>
-            <div className="mt-8 rounded-lg border border-border bg-card p-6">
-              <h2 className="text-2xl font-semibold text-card-foreground">
-                Welcome to GrowManager
-              </h2>
-              <p className="mt-2 text-muted-foreground">
-                Your development environment is ready. Start building your grow journal!
-              </p>
-            </div>
-          </div>
-        </div>
+        <Routes>
+          {/* Root - redirect to dashboard or login */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+          {/* Public Auth Routes - wrapped in AuthLayout */}
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+          </Route>
+
+          {/* Verify Email - standalone, not in AuthLayout */}
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+
+          {/* Protected App Routes - require authentication and email verification */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <VerifiedRoute>
+                  <AppLayout />
+                </VerifiedRoute>
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/grows" element={<GrowsListPage />} />
+            <Route path="/grows/:id" element={<GrowDetailPage />} />
+            <Route path="/plants" element={<PlantsListPage />} />
+            <Route path="/plants/:id" element={<PlantDetailPage />} />
+            <Route path="/cultivars" element={<CultivarsListPage />} />
+            <Route path="/cultivars/:id" element={<CultivarDetailPage />} />
+            <Route path="/log" element={<LogActivityPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+
+          {/* 404 Not Found */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+
+        {/* Global Toast Notifications */}
+        <Toaster />
       </BrowserRouter>
-    </QueryClientProvider>
-  )
+    </ErrorBoundary>
+  );
 }
 
-export default App
+export default App;

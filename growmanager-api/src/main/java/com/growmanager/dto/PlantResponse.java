@@ -1,6 +1,7 @@
 package com.growmanager.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.growmanager.entity.Plant;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,9 +27,15 @@ public class PlantResponse {
     private UUID growId;
     private UUID cultivarId;
     private String cultivarName;
+
+    @JsonProperty("plantTag")
     private String tag;
+
     private String stage;
+
+    @JsonProperty("healthStatus")
     private String status;
+
     private LocalDate plantedDate;
     private String notes;
     private LocalDateTime createdAt;

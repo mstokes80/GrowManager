@@ -114,13 +114,12 @@ public class UserController {
             throw new IllegalStateException("User is not authenticated");
         }
 
-        try {
-            // The authentication principal is set to the user ID by JwtAuthenticationFilter
-            String userIdString = authentication.getName();
-            return UUID.fromString(userIdString);
-        } catch (IllegalArgumentException e) {
-            logger.error("Failed to parse user ID from authentication: {}", authentication.getName());
-            throw new IllegalStateException("Invalid user ID in authentication", e);
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof com.growmanager.security.UserPrincipal) {
+            return ((com.growmanager.security.UserPrincipal) principal).getId();
         }
+
+        logger.error("Invalid principal type in authentication: {}", principal.getClass().getName());
+        throw new IllegalStateException("Invalid authentication principal type");
     }
 }

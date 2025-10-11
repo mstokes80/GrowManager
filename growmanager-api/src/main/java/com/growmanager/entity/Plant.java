@@ -1,5 +1,11 @@
 package com.growmanager.entity;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.growmanager.config.PlantStageDeserializer;
+import com.growmanager.config.PlantStageSerializer;
+import com.growmanager.config.PlantStatusDeserializer;
+import com.growmanager.config.PlantStatusSerializer;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -53,13 +59,11 @@ public class Plant {
     private String tag;
 
     @NotNull(message = "Plant stage is required")
-    @Enumerated(EnumType.STRING)
     @Column(name = "stage", nullable = false, length = 20)
     @Builder.Default
     private PlantStage stage = PlantStage.SEEDLING;
 
     @NotNull(message = "Plant status is required")
-    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default
     private PlantStatus status = PlantStatus.ACTIVE;
@@ -79,6 +83,8 @@ public class Plant {
     /**
      * Enum representing plant growth stages.
      */
+    @JsonSerialize(using = PlantStageSerializer.class)
+    @JsonDeserialize(using = PlantStageDeserializer.class)
     public enum PlantStage {
         SEEDLING("seedling"),
         VEGETATIVE("vegetative"),
@@ -104,6 +110,8 @@ public class Plant {
     /**
      * Enum representing plant status.
      */
+    @JsonSerialize(using = PlantStatusSerializer.class)
+    @JsonDeserialize(using = PlantStatusDeserializer.class)
     public enum PlantStatus {
         ACTIVE("active"),
         HARVESTED("harvested"),

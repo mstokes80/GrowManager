@@ -1,5 +1,11 @@
 package com.growmanager.entity;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.growmanager.config.EnvironmentTypeDeserializer;
+import com.growmanager.config.EnvironmentTypeSerializer;
+import com.growmanager.config.GrowStatusDeserializer;
+import com.growmanager.config.GrowStatusSerializer;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -54,12 +60,10 @@ public class Grow {
     private LocalDate endDate;
 
     @NotNull(message = "Status is required")
-    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default
     private GrowStatus status = GrowStatus.PLANNING;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "environment_type", length = 20)
     private EnvironmentType environmentType;
 
@@ -79,6 +83,8 @@ public class Grow {
     /**
      * Enum representing grow status values.
      */
+    @JsonSerialize(using = GrowStatusSerializer.class)
+    @JsonDeserialize(using = GrowStatusDeserializer.class)
     public enum GrowStatus {
         PLANNING("planning"),
         ACTIVE("active"),
@@ -105,6 +111,8 @@ public class Grow {
     /**
      * Enum representing environment types.
      */
+    @JsonSerialize(using = EnvironmentTypeSerializer.class)
+    @JsonDeserialize(using = EnvironmentTypeDeserializer.class)
     public enum EnvironmentType {
         INDOOR("indoor"),
         OUTDOOR("outdoor"),

@@ -1,6 +1,10 @@
 package com.growmanager.entity;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.growmanager.config.CultivarTypeDeserializer;
+import com.growmanager.config.CultivarTypeSerializer;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -53,7 +57,6 @@ public class Cultivar {
     private String genetics;
 
     @NotNull(message = "Cultivar type is required")
-    @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 20)
     @Builder.Default
     private CultivarType type = CultivarType.UNKNOWN;
@@ -74,6 +77,8 @@ public class Cultivar {
     /**
      * Enum representing cultivar types.
      */
+    @JsonSerialize(using = CultivarTypeSerializer.class)
+    @JsonDeserialize(using = CultivarTypeDeserializer.class)
     public enum CultivarType {
         INDICA("indica"),
         SATIVA("sativa"),

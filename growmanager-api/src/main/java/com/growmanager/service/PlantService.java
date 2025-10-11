@@ -96,13 +96,24 @@ public class PlantService {
             }
         }
 
-        Plant plant = Plant.builder()
+        Plant.PlantBuilder plantBuilder = Plant.builder()
                 .grow(grow)
                 .cultivar(cultivar)
                 .tag(plantTag)
                 .plantedDate(request.getPlantedDate())
-                .notes(request.getNotes())
-                .build();
+                .notes(request.getNotes());
+
+        // Set stage if provided, otherwise default will be set in @PrePersist
+        if (request.getStage() != null) {
+            plantBuilder.stage(request.getStage());
+        }
+
+        // Set status if provided, otherwise default will be set in @PrePersist
+        if (request.getStatus() != null) {
+            plantBuilder.status(request.getStatus());
+        }
+
+        Plant plant = plantBuilder.build();
 
         plant = plantRepository.save(plant);
 
