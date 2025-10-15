@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePlantsByGrow, useCreatePlant } from '@/services/plantsApi';
 import { useGrows } from '@/services/growsApi';
-import { PlantStage, HealthStatus } from '@/types/plant';
+import { Plant, PlantStage, HealthStatus } from '@/types/plant';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { PlantCard } from '@/components/plants/PlantCard';
 import { PlantForm, PlantFormData } from '@/components/plants/PlantForm';
@@ -27,6 +27,7 @@ export function PlantsListPage() {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [plantToCopy, setPlantToCopy] = useState<Plant | null>(null);
 
   // Get selected grow from URL or default to first active grow
   const { data: grows } = useGrows();
@@ -119,6 +120,16 @@ export function PlantsListPage() {
 
   const handleCardClick = (plantId: string) => {
     navigate(`/plants/${plantId}`);
+  };
+
+  const handleCopyPlant = (plant: Plant) => {
+    setPlantToCopy(plant);
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsCreateDialogOpen(false);
+    setPlantToCopy(null);
   };
 
   return (
@@ -287,6 +298,7 @@ export function PlantsListPage() {
                   key={plant.id}
                   plant={plant}
                   onClick={() => handleCardClick(plant.id)}
+                  onCopy={handleCopyPlant}
                 />
               ))}
             </div>
@@ -294,16 +306,17 @@ export function PlantsListPage() {
         )}
       </div>
 
-      {/* Create Plant Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+      {/* Create/Copy Plant Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={handleCloseDialog}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add New Plant</DialogTitle>
+            <DialogTitle>{plantToCopy ? 'Copy Plant' : 'Add New Plant'}</DialogTitle>
           </DialogHeader>
           <PlantForm
+            plant={plantToCopy || undefined}
             growId={selectedGrowId}
             onSubmit={handleCreatePlant}
-            onCancel={() => setIsCreateDialogOpen(false)}
+            onCancel={handleCloseDialog}
             isSubmitting={createPlantMutation.isPending}
           />
         </DialogContent>

@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertCircle, Droplets, Leaf, Beaker } from 'lucide-react';
+import { AlertCircle, Droplets, Leaf, Beaker, Plus, X } from 'lucide-react';
 import { format } from 'date-fns';
+
+// Amendment validation schema
+const amendmentSchema = z.object({
+  name: z.string().min(1, 'Amendment name is required'),
+  amount: z
+    .number({ invalid_type_error: 'Amount must be a number' })
+    .positive('Amount must be positive'),
+  unit: z.enum(
+    [
+      'teaspoons',
+      'tablespoons',
+      'cups',
+      'grams',
+      'kilograms',
+      'ounces',
+      'pounds',
+      'milliliters',
+      'liters',
+    ],
+    {
+      errorMap: () => ({ message: 'Please select a valid unit' }),
+    }
+  ),
+});
 
 // Validation schema using Zod
 const feedingSchema = z.object({
@@ -26,18 +50,27 @@ const feedingSchema = z.object({
     .positive('Amount must be positive')
     .max(100000, 'Amount must be less than 100,000 ml'),
   ecLevel: z
-    .number({ invalid_type_error: 'EC must be a number' })
-    .min(0, 'EC must be non-negative')
-    .max(10, 'EC must be less than 10')
+    .union([
+      z.number().min(0, 'EC must be non-negative').max(10, 'EC must be less than 10'),
+      z.literal('').transform(() => null),
+      z.nan().transform(() => null),
+      z.null(),
+      z.undefined(),
+    ])
     .optional()
     .nullable(),
   phLevel: z
-    .number({ invalid_type_error: 'pH must be a number' })
-    .min(0, 'pH must be between 0 and 14')
-    .max(14, 'pH must be between 0 and 14')
+    .union([
+      z.number().min(0, 'pH must be between 0 and 14').max(14, 'pH must be between 0 and 14'),
+      z.literal('').transform(() => null),
+      z.nan().transform(() => null),
+      z.null(),
+      z.undefined(),
+    ])
     .optional()
     .nullable(),
   nutrientMix: z.string().max(200, 'Nutrient mix must be 200 characters or less').optional(),
+  amendments: z.array(amendmentSchema).optional(),
   notes: z.string().max(500, 'Notes must be 500 characters or less').optional(),
   fedAt: z.string().min(1, 'Date/time is required'),
   applyToAllPlants: z.boolean().optional(),
@@ -67,6 +100,7 @@ export function LogFeedingForm({
     handleSubmit,
     setValue,
     watch,
+    control,
     formState: { errors },
   } = useForm<LogFeedingFormData>({
     resolver: zodResolver(feedingSchema),
@@ -76,10 +110,16 @@ export function LogFeedingForm({
       ecLevel: null,
       phLevel: null,
       nutrientMix: '',
+      amendments: [],
       notes: '',
       fedAt: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
       applyToAllPlants: false,
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'amendments',
   });
 
   const selectedFeedingType = watch('feedingType');
@@ -214,6 +254,114 @@ export function LogFeedingForm({
             <AlertCircle className="h-4 w-4" />
             {errors.nutrientMix.message}
           </p>
+        )}
+      </div>
+
+      {/* Soil Amendments */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Soil Amendments (optional)</Label>
+            <p className="text-sm text-muted-foreground mt-1">
+              Add organic soil amendments like kelp meal, dolomite lime, etc.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => append({ name: '', amount: 0, unit: 'cups' as const })}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add Amendment
+          </Button>
+        </div>
+
+        {fields.length > 0 && (
+          <div className="space-y-3">
+            {fields.map((field, index) => (
+              <div key={field.id} className="flex gap-2 items-start p-3 border rounded-md bg-muted/30">
+                <div className="flex-1 grid grid-cols-3 gap-2">
+                  <div className="col-span-3 sm:col-span-1">
+                    <Label htmlFor={`amendments.${index}.name`} className="text-xs">
+                      Amendment Name
+                    </Label>
+                    <Input
+                      id={`amendments.${index}.name`}
+                      placeholder="e.g., Kelp Meal"
+                      {...register(`amendments.${index}.name`)}
+                      aria-invalid={!!errors.amendments?.[index]?.name}
+                    />
+                    {errors.amendments?.[index]?.name && (
+                      <p className="text-xs text-destructive mt-1">
+                        {errors.amendments[index]?.name?.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor={`amendments.${index}.amount`} className="text-xs">
+                      Amount
+                    </Label>
+                    <Input
+                      id={`amendments.${index}.amount`}
+                      type="number"
+                      step="0.01"
+                      placeholder="4"
+                      {...register(`amendments.${index}.amount`, { valueAsNumber: true })}
+                      aria-invalid={!!errors.amendments?.[index]?.amount}
+                    />
+                    {errors.amendments?.[index]?.amount && (
+                      <p className="text-xs text-destructive mt-1">
+                        {errors.amendments[index]?.amount?.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor={`amendments.${index}.unit`} className="text-xs">
+                      Unit
+                    </Label>
+                    <Select
+                      value={watch(`amendments.${index}.unit`)}
+                      onValueChange={(value) => setValue(`amendments.${index}.unit`, value as any)}
+                    >
+                      <SelectTrigger id={`amendments.${index}.unit`} className="h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="teaspoons">teaspoons</SelectItem>
+                        <SelectItem value="tablespoons">tablespoons</SelectItem>
+                        <SelectItem value="cups">cups</SelectItem>
+                        <SelectItem value="grams">grams</SelectItem>
+                        <SelectItem value="kilograms">kilograms</SelectItem>
+                        <SelectItem value="ounces">ounces</SelectItem>
+                        <SelectItem value="pounds">pounds</SelectItem>
+                        <SelectItem value="milliliters">milliliters</SelectItem>
+                        <SelectItem value="liters">liters</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.amendments?.[index]?.unit && (
+                      <p className="text-xs text-destructive mt-1">
+                        {errors.amendments[index]?.unit?.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="mt-6"
+                  onClick={() => remove(index)}
+                  aria-label="Remove amendment"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

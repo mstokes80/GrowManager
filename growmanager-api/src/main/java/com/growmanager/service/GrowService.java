@@ -76,12 +76,12 @@ public class GrowService {
     }
 
     /**
-     * Gets all grows for the current user.
+     * Gets all grows for the current user with plant counts.
      * Can optionally filter by status.
      *
      * @param userId the ID of the current user
      * @param status the optional status filter
-     * @return list of grow responses
+     * @return list of grow responses with plant counts
      */
     @Transactional(readOnly = true)
     public List<GrowResponse> getGrowsByUser(UUID userId, GrowStatus status) {
@@ -95,7 +95,10 @@ public class GrowService {
         }
 
         return grows.stream()
-                .map(GrowResponse::fromEntity)
+                .map(grow -> {
+                    long plantCount = plantRepository.countByGrowId(grow.getId());
+                    return GrowResponse.fromEntityWithPlantCount(grow, plantCount);
+                })
                 .collect(Collectors.toList());
     }
 

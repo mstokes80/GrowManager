@@ -23,6 +23,9 @@ const growSchema = z.object({
     .min(1, 'Name is required')
     .max(100, 'Name must be 100 characters or less'),
   startDate: z.string().min(1, 'Start date is required'),
+  status: z.enum(['planning', 'active', 'flowering', 'drying', 'completed'], {
+    errorMap: () => ({ message: 'Please select a status' }),
+  }).optional(),
   environmentType: z.enum(['indoor', 'outdoor', 'greenhouse'], {
     errorMap: () => ({ message: 'Please select an environment type' }),
   }),
@@ -74,11 +77,13 @@ export function GrowForm({
     defaultValues: {
       name: grow?.name || '',
       startDate: formatDateForInput(grow?.startDate),
+      status: grow?.status || 'planning',
       environmentType: grow?.environmentType || 'indoor',
       notes: grow?.notes || '',
     },
   });
 
+  const selectedStatus = watch('status');
   const selectedEnvironmentType = watch('environmentType');
 
   return (
@@ -130,6 +135,36 @@ export function GrowForm({
           </p>
         )}
       </div>
+
+      {/* Status Field - Only show in edit mode */}
+      {isEditMode && (
+        <div className="space-y-2">
+          <Label htmlFor="status">
+            Status <span className="text-destructive">*</span>
+          </Label>
+          <Select
+            value={selectedStatus}
+            onValueChange={(value) => setValue('status', value as any)}
+          >
+            <SelectTrigger id="status" aria-invalid={!!errors.status}>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="planning">Planning</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="flowering">Flowering</SelectItem>
+              <SelectItem value="drying">Drying</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+          {errors.status && (
+            <p id="status-error" className="text-sm text-destructive flex items-center gap-1">
+              <AlertCircle className="h-4 w-4" />
+              {errors.status.message}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Environment Type Field */}
       <div className="space-y-2">

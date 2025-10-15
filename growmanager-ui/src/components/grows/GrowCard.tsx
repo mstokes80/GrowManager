@@ -20,19 +20,13 @@ export function GrowCard({ grow, onClick }: GrowCardProps) {
     switch (status) {
       case 'planning':
         return 'secondary';
-      case 'germination':
-        return 'warning';
-      case 'vegetative':
+      case 'active':
         return 'success';
       case 'flowering':
         return 'info';
       case 'drying':
         return 'warning';
-      case 'curing':
-        return 'secondary';
-      case 'harvested':
-        return 'success';
-      case 'archived':
+      case 'completed':
         return 'secondary';
       default:
         return 'default';

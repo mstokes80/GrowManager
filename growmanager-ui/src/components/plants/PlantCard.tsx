@@ -1,19 +1,21 @@
 import { Plant } from '@/types/plant';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Leaf, AlertTriangle, Activity, Heart } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Leaf, AlertTriangle, Activity, Heart, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface PlantCardProps {
   plant: Plant;
   onClick?: () => void;
+  onCopy?: (plant: Plant) => void;
 }
 
 /**
  * PlantCard displays a plant in a card format
  * Shows plant tag, cultivar, stage, health status, and planted date
  */
-export function PlantCard({ plant, onClick }: PlantCardProps) {
+export function PlantCard({ plant, onClick, onCopy }: PlantCardProps) {
   const getStageColor = (
     stage: Plant['stage']
   ): 'default' | 'secondary' | 'success' | 'warning' | 'info' => {
@@ -110,6 +112,23 @@ export function PlantCard({ plant, onClick }: PlantCardProps) {
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground">{formatPlantedDate(plant.plantedDate)}</p>
+
+          {onCopy && (
+            <div className="pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCopy(plant);
+                }}
+              >
+                <Copy className="h-3 w-3 mr-2" />
+                Copy Plant
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -26,6 +26,7 @@ import { CultivarDetailPage } from '@/pages/CultivarDetailPage';
 import { LogActivityPage } from '@/pages/LogActivityPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { HarvestDetailPage } from '@/pages/HarvestDetailPage';
 import { NotFound } from '@/pages/NotFound';
 
 function App() {
@@ -68,10 +69,12 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/grows" element={<GrowsListPage />} />
             <Route path="/grows/:id" element={<GrowDetailPage />} />
-            <Route path="/plants" element={<PlantsListPage />} />
+            {/* Redirect /plants list to /grows - plants are now displayed in grow tabs */}
+            <Route path="/plants" element={<Navigate to="/grows" replace />} />
             <Route path="/plants/:id" element={<PlantDetailPage />} />
             <Route path="/cultivars" element={<CultivarsListPage />} />
             <Route path="/cultivars/:id" element={<CultivarDetailPage />} />
+            <Route path="/harvests/:id" element={<HarvestDetailPage />} />
             <Route path="/log" element={<LogActivityPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />

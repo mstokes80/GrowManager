@@ -42,6 +42,7 @@ interface PlantFormProps {
   onSubmit: (data: PlantFormData) => void;
   onCancel?: () => void;
   isSubmitting?: boolean;
+  isCopyMode?: boolean; // New prop to indicate if we're copying
 }
 
 /**
@@ -79,7 +80,7 @@ export function PlantForm({
   } = useForm<PlantFormData>({
     resolver: zodResolver(plantSchema),
     defaultValues: {
-      plantTag: plant?.plantTag || '',
+      plantTag: '', // Always empty to force user to enter a new tag
       cultivarId: plant?.cultivarId || '',
       plantedDate: formatDateForInput(plant?.plantedDate),
       stage: plant?.stage || 'seedling',

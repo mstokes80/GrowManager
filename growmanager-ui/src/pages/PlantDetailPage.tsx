@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { usePlant, useUpdatePlant, useDeletePlant } from '@/services/plantsApi';
+import { usePlant, useUpdatePlant, useDeletePlant, useCreatePlant } from '@/services/plantsApi';
 import {
   useFeedingEventsByPlant,
   useCreateFeedingEvent,
@@ -9,11 +9,25 @@ import {
   useActivityLogsByPlant,
   useCreateActivityLog,
 } from '@/services/activityLogsApi';
+import {
+  useObservationsByPlant,
+  useCreateObservation,
+  useUpdateObservation,
+  useDeleteObservation,
+} from '@/services/observationsApi';
+import { useCreateHarvest } from '@/services/harvestsApi';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { PlantForm, PlantFormData } from '@/components/plants/PlantForm';
 import { LogFeedingForm, LogFeedingFormData } from '@/components/plants/LogFeedingForm';
 import { LogActivityForm, LogActivityFormData } from '@/components/plants/LogActivityForm';
 import { ActivityTimeline } from '@/components/plants/ActivityTimeline';
+import {
+  CreateObservationForm,
+  EditObservationForm,
+  ObservationDetailModal,
+  PhotoGallery,
+} from '@/components/observations';
+import { CreateHarvestForm, CreateHarvestFormData } from '@/components/harvests/CreateHarvestForm';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,9 +58,14 @@ import {
   Leaf,
   Droplets,
   Activity,
+  Camera,
+  Images,
+  Copy,
+  Scale,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import type { Observation } from '@/types/observation';
 
 /**
  * PlantDetailPage - Display detailed information about a specific plant
@@ -57,9 +76,14 @@ export function PlantDetailPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isFeedingDialogOpen, setIsFeedingDialogOpen] = useState(false);
   const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
+  const [isObservationDialogOpen, setIsObservationDialogOpen] = useState(false);
+  const [isEditObservationDialogOpen, setIsEditObservationDialogOpen] = useState(false);
+  const [isHarvestDialogOpen, setIsHarvestDialogOpen] = useState(false);
+  const [selectedObservation, setSelectedObservation] = useState<Observation | null>(null);
 
   const { data: plant, isLoading, error } = usePlant(id || '');
   const { data: feedingEvents = [], isLoading: feedingLoading } = useFeedingEventsByPlant(
@@ -68,11 +92,19 @@ export function PlantDetailPage() {
   const { data: activityLogs = [], isLoading: activityLoading } = useActivityLogsByPlant(
     id || ''
   );
+  const { data: observations = [], isLoading: observationsLoading } = useObservationsByPlant(
+    id || ''
+  );
 
   const updatePlantMutation = useUpdatePlant();
   const deletePlantMutation = useDeletePlant();
+  const createPlantMutation = useCreatePlant();
   const createFeedingEventMutation = useCreateFeedingEvent();
   const createActivityLogMutation = useCreateActivityLog();
+  const createObservationMutation = useCreateObservation();
+  const updateObservationMutation = useUpdateObservation();
+  const deleteObservationMutation = useDeleteObservation();
+  const createHarvestMutation = useCreateHarvest();
 
   const handleUpdatePlant = async (data: PlantFormData) => {
     if (!id) return;
@@ -101,6 +133,37 @@ export function PlantDetailPage() {
         variant: 'destructive',
         title: 'Failed to update plant',
         description: 'An error occurred while updating the plant. Please try again.',
+      });
+    }
+  };
+
+  const handleCopyPlant = async (data: PlantFormData) => {
+    if (!plant) return;
+
+    try {
+      const newPlant = await createPlantMutation.mutateAsync({
+        growId: plant.growId,
+        plantTag: data.plantTag,
+        cultivarId: data.cultivarId || undefined,
+        plantedDate: data.plantedDate,
+        stage: data.stage,
+        healthStatus: data.healthStatus,
+        notes: data.notes || undefined,
+      });
+
+      toast({
+        title: 'Success!',
+        description: `Plant "${data.plantTag}" has been created as a copy.`,
+      });
+
+      setIsCopyDialogOpen(false);
+      navigate(`/plants/${newPlant.id}`);
+    } catch (error) {
+      console.error('Failed to copy plant:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to copy plant',
+        description: 'An error occurred while copying the plant. Please try again.',
       });
     }
   };
@@ -138,8 +201,10 @@ export function PlantDetailPage() {
         ecLevel: data.ecLevel || undefined,
         phLevel: data.phLevel || undefined,
         nutrientMix: data.nutrientMix || undefined,
+        amendments: data.amendments || undefined,
         notes: data.notes || undefined,
         fedAt: data.fedAt,
+        applyToAllPlants: data.applyToAllPlants,
       });
 
       toast({
@@ -183,6 +248,152 @@ export function PlantDetailPage() {
         variant: 'destructive',
         title: 'Failed to log activity',
         description: 'An error occurred while logging the activity. Please try again.',
+      });
+    }
+  };
+
+  const handleObservationClick = (observation: Observation) => {
+    setSelectedObservation(observation);
+  };
+
+  const handleCreateObservation = async (formData: any, files: File[]) => {
+    if (!id) return;
+
+    try {
+      // Parse tags from comma-separated string to array
+      const tags = formData.tags
+        ? formData.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+        : [];
+
+      // Add :00 seconds to timestamp if not present
+      const timestamp = formData.timestamp.includes(':')
+        ? formData.timestamp.length === 16
+          ? `${formData.timestamp}:00`
+          : formData.timestamp
+        : formData.timestamp;
+
+      await createObservationMutation.mutateAsync({
+        plantId: id,
+        data: {
+          timestamp,
+          note: formData.note,
+          observationType: formData.observationType,
+          tags,
+        },
+        files,
+      });
+
+      toast({
+        title: 'Success!',
+        description: 'Observation has been created.',
+      });
+
+      setIsObservationDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to create observation:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to create observation',
+        description: 'An error occurred while creating the observation. Please try again.',
+      });
+    }
+  };
+
+  const handleEditObservation = (observation: Observation) => {
+    setSelectedObservation(observation);
+    setIsEditObservationDialogOpen(true);
+  };
+
+  const handleUpdateObservation = async (
+    formData: any,
+    newFiles: File[],
+    photosToRemove: string[]
+  ) => {
+    if (!selectedObservation) return;
+
+    try {
+      const tags = formData.tags
+        ? formData.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+        : [];
+
+      const timestamp = formData.timestamp.includes(':')
+        ? formData.timestamp.length === 16
+          ? `${formData.timestamp}:00`
+          : formData.timestamp
+        : formData.timestamp;
+
+      await updateObservationMutation.mutateAsync({
+        id: selectedObservation.id,
+        data: {
+          timestamp,
+          note: formData.note,
+          observationType: formData.observationType,
+          tags,
+        },
+        files: newFiles.length > 0 ? newFiles : undefined,
+        photosToRemove: photosToRemove.length > 0 ? photosToRemove : undefined,
+      });
+
+      toast({
+        title: 'Success!',
+        description: 'Observation has been updated.',
+      });
+
+      setIsEditObservationDialogOpen(false);
+      setSelectedObservation(null);
+    } catch (error) {
+      console.error('Failed to update observation:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to update observation',
+        description: 'An error occurred while updating the observation. Please try again.',
+      });
+    }
+  };
+
+  const handleDeleteObservation = async () => {
+    if (!selectedObservation) return;
+
+    try {
+      await deleteObservationMutation.mutateAsync(selectedObservation.id);
+
+      toast({
+        title: 'Deleted',
+        description: 'Observation has been deleted successfully.',
+      });
+
+      setSelectedObservation(null);
+    } catch (error) {
+      console.error('Failed to delete observation:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to delete observation',
+        description: 'An error occurred while deleting the observation. Please try again.',
+      });
+    }
+  };
+
+  const handleCreateHarvest = async (data: CreateHarvestFormData) => {
+    if (!id) return;
+
+    try {
+      await createHarvestMutation.mutateAsync({
+        plantId: id,
+        data,
+      });
+
+      toast({
+        title: 'Success!',
+        description: 'Harvest has been logged. Plant status updated to "Harvested".',
+      });
+
+      setIsHarvestDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to create harvest:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to log harvest',
+        description: 'An error occurred while logging the harvest. Please try again.',
       });
     }
   };
@@ -263,14 +474,24 @@ export function PlantDetailPage() {
         title={plant.plantTag}
         showBackButton
         actions={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsObservationDialogOpen(true)}
+            >
+              <Camera className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Add Observation</span>
+              <span className="sm:hidden">Observe</span>
+            </Button>
             <Button
               size="sm"
               variant="outline"
               onClick={() => setIsFeedingDialogOpen(true)}
             >
               <Droplets className="h-4 w-4 mr-2" />
-              Log Feeding
+              <span className="hidden sm:inline">Log Feeding</span>
+              <span className="sm:hidden">Feed</span>
             </Button>
             <Button
               size="sm"
@@ -278,8 +499,20 @@ export function PlantDetailPage() {
               onClick={() => setIsActivityDialogOpen(true)}
             >
               <Activity className="h-4 w-4 mr-2" />
-              Log Activity
+              <span className="hidden sm:inline">Log Activity</span>
+              <span className="sm:hidden">Activity</span>
             </Button>
+            {(plant.stage === 'flowering' || plant.stage === 'harvest') && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsHarvestDialogOpen(true)}
+              >
+                <Scale className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Log Harvest</span>
+                <span className="sm:hidden">Harvest</span>
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={() => setIsEditDialogOpen(true)}>
               <Edit className="h-4 w-4 mr-2" />
               Edit
@@ -291,6 +524,10 @@ export function PlantDetailPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsCopyDialogOpen(true)}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Plant
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   onClick={() => setIsDeleteDialogOpen(true)}
@@ -307,9 +544,11 @@ export function PlantDetailPage() {
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-4xl mx-auto">
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="timeline">Timeline</TabsTrigger>
+              <TabsTrigger value="observations">Observations</TabsTrigger>
+              <TabsTrigger value="photos">Photos</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="mt-6">
@@ -399,6 +638,86 @@ export function PlantDetailPage() {
                 isLoading={feedingLoading || activityLoading}
               />
             </TabsContent>
+
+            <TabsContent value="observations" className="mt-6">
+              {observationsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : observations.length === 0 ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Camera className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-lg font-medium mb-2">No observations yet</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Start documenting your plant's progress
+                    </p>
+                    <Button onClick={() => setIsObservationDialogOpen(true)}>
+                      <Camera className="h-4 w-4 mr-2" />
+                      Add Observation
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {observations.map((observation) => (
+                    <Card
+                      key={observation.id}
+                      className="cursor-pointer hover:bg-accent transition-colors"
+                      onClick={() => handleObservationClick(observation)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          {observation.photos.length > 0 && (
+                            <div className="flex-shrink-0">
+                              <img
+                                src={observation.photos[0].thumbnailUrl}
+                                alt="Observation"
+                                className="w-20 h-20 object-cover rounded"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="outline" className="capitalize">
+                                {observation.observationType.replace('_', ' ')}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">
+                                {format(new Date(observation.timestamp), 'PPp')}
+                              </span>
+                            </div>
+                            {observation.note && (
+                              <p className="text-sm line-clamp-2">{observation.note}</p>
+                            )}
+                            {observation.photos.length > 1 && (
+                              <p className="text-xs text-muted-foreground mt-2">
+                                <Images className="h-3 w-3 inline mr-1" />
+                                {observation.photos.length} photos
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="photos" className="mt-6">
+              <PhotoGallery
+                observations={observations}
+                isLoading={observationsLoading}
+                onPhotoClick={(photoUrl) => {
+                  const observation = observations.find((obs) =>
+                    obs.photos.some((p) => p.fullSizeUrl === photoUrl)
+                  );
+                  if (observation) {
+                    handleObservationClick(observation);
+                  }
+                }}
+              />
+            </TabsContent>
           </Tabs>
         </div>
       </div>
@@ -471,6 +790,79 @@ export function PlantDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Observation Dialog */}
+      <Dialog open={isObservationDialogOpen} onOpenChange={setIsObservationDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Observation</DialogTitle>
+          </DialogHeader>
+          <CreateObservationForm
+            plantId={id || ''}
+            onSubmit={handleCreateObservation}
+            onCancel={() => setIsObservationDialogOpen(false)}
+            isSubmitting={createObservationMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Copy Plant Dialog */}
+      <Dialog open={isCopyDialogOpen} onOpenChange={setIsCopyDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Copy Plant</DialogTitle>
+          </DialogHeader>
+          <PlantForm
+            plant={plant}
+            growId={plant.growId}
+            onSubmit={handleCopyPlant}
+            onCancel={() => setIsCopyDialogOpen(false)}
+            isSubmitting={createPlantMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Observation Detail Modal */}
+      <ObservationDetailModal
+        observation={selectedObservation}
+        open={!!selectedObservation}
+        onClose={() => setSelectedObservation(null)}
+        onEdit={() => handleEditObservation(selectedObservation!)}
+        onDelete={handleDeleteObservation}
+        isDeletingObservation={deleteObservationMutation.isPending}
+      />
+
+      {/* Edit Observation Dialog */}
+      {selectedObservation && (
+        <Dialog open={isEditObservationDialogOpen} onOpenChange={setIsEditObservationDialogOpen}>
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Observation</DialogTitle>
+            </DialogHeader>
+            <EditObservationForm
+              observation={selectedObservation}
+              onSubmit={handleUpdateObservation}
+              onCancel={() => setIsEditObservationDialogOpen(false)}
+              isSubmitting={updateObservationMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Log Harvest Dialog */}
+      <Dialog open={isHarvestDialogOpen} onOpenChange={setIsHarvestDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Log Harvest</DialogTitle>
+          </DialogHeader>
+          <CreateHarvestForm
+            plantId={id || ''}
+            onSubmit={handleCreateHarvest}
+            onCancel={() => setIsHarvestDialogOpen(false)}
+            isSubmitting={createHarvestMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

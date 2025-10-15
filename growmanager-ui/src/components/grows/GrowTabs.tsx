@@ -1,16 +1,19 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
+import { HarvestsTab } from '@/components/harvests/HarvestsTab';
+import { PlantsTab } from '@/components/plants/PlantsTab';
 
 interface GrowTabsProps {
   overviewContent: React.ReactNode;
+  growId: string;
 }
 
 /**
  * GrowTabs - Tab navigation for grow detail page
- * Implements tabs structure with placeholders for future features
+ * Implements tabs structure with plants, environment, and harvests
  * Implements Task Group 5.2.6
  */
-export function GrowTabs({ overviewContent }: GrowTabsProps) {
+export function GrowTabs({ overviewContent, growId }: GrowTabsProps) {
   return (
     <Tabs defaultValue="overview" className="w-full">
       <TabsList className="grid w-full grid-cols-4">
@@ -25,13 +28,7 @@ export function GrowTabs({ overviewContent }: GrowTabsProps) {
       </TabsContent>
 
       <TabsContent value="plants" className="mt-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">Plants feature coming in Phase 6</p>
-            </div>
-          </CardContent>
-        </Card>
+        <PlantsTab growId={growId} />
       </TabsContent>
 
       <TabsContent value="environment" className="mt-6">
@@ -45,13 +42,7 @@ export function GrowTabs({ overviewContent }: GrowTabsProps) {
       </TabsContent>
 
       <TabsContent value="harvests" className="mt-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">Harvests feature coming soon</p>
-            </div>
-          </CardContent>
-        </Card>
+        <HarvestsTab growId={growId} />
       </TabsContent>
     </Tabs>
   );

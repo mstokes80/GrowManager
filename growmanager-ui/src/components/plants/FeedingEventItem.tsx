@@ -93,6 +93,23 @@ export function FeedingEventItem({ event }: FeedingEventItemProps) {
               </p>
             )}
 
+            {/* Amendments */}
+            {event.amendments && event.amendments.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Soil Amendments:</p>
+                <ul className="text-sm text-muted-foreground space-y-0.5">
+                  {event.amendments.map((amendment, index) => (
+                    <li key={index} className="flex items-baseline gap-1">
+                      <span className="text-foreground/70">•</span>
+                      <span>
+                        {amendment.amount} {amendment.unit} of {amendment.name}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Notes */}
             {event.notes && (
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">{event.notes}</p>

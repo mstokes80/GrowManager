@@ -12,7 +12,7 @@ export interface Grow {
   name: string;
   startDate: string;
   endDate?: string;
-  status: 'planning' | 'germination' | 'vegetative' | 'flowering' | 'drying' | 'curing' | 'harvested' | 'archived';
+  status: 'planning' | 'active' | 'flowering' | 'drying' | 'completed';
   environmentType: 'indoor' | 'outdoor' | 'greenhouse';
   notes?: string;
   isArchived: boolean;
@@ -31,7 +31,7 @@ export interface CreateGrowRequest {
 export interface UpdateGrowRequest {
   name?: string;
   endDate?: string;
-  status?: 'planning' | 'germination' | 'vegetative' | 'flowering' | 'drying' | 'curing' | 'harvested' | 'archived';
+  status?: 'planning' | 'active' | 'flowering' | 'drying' | 'completed';
   environmentType?: 'indoor' | 'outdoor' | 'greenhouse';
   notes?: string;
 }

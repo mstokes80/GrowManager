@@ -201,6 +201,45 @@ public class UserService {
     }
 
     /**
+     * Refreshes an expired access token using a valid refresh token.
+     *
+     * @param request the refresh token request
+     * @return authentication response with new tokens
+     * @throws InvalidTokenException if refresh token is invalid or expired
+     */
+    public AuthResponse refreshToken(RefreshTokenRequest request) {
+        logger.info("Processing token refresh request");
+
+        // Validate refresh token
+        if (!jwtTokenProvider.validateToken(request.getRefreshToken())) {
+            logger.warn("Token refresh failed: Invalid refresh token");
+            throw new InvalidTokenException("Invalid or expired refresh token");
+        }
+
+        // Verify token type
+        String tokenType = jwtTokenProvider.getTokenTypeFromToken(request.getRefreshToken());
+        if (!"refresh".equals(tokenType)) {
+            logger.warn("Token refresh failed: Wrong token type: {}", tokenType);
+            throw new InvalidTokenException("Invalid token type. Refresh token required.");
+        }
+
+        // Get user from refresh token
+        UUID userId = jwtTokenProvider.getUserIdFromToken(request.getRefreshToken());
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Generate new tokens
+        String newAccessToken = jwtTokenProvider.generateAccessToken(user);
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(user, false);
+
+        UserResponse userResponse = UserResponse.fromEntity(user);
+
+        logger.info("Token refreshed successfully for user: {}", user.getEmail());
+
+        return AuthResponse.success(newAccessToken, newRefreshToken, userResponse);
+    }
+
+    /**
      * Initiates a password reset request.
      * Generates a reset token and sends email. Rate limited and always returns success message.
      *

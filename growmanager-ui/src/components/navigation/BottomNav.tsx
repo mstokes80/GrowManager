@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Grid3x3, Leaf, Plus, User, Sprout } from 'lucide-react';
+import { Home, Grid3x3, Plus, User, Sprout } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -12,7 +12,6 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: '/dashboard', icon: Home, label: 'Home' },
   { to: '/grows', icon: Grid3x3, label: 'Grows' },
-  { to: '/plants', icon: Leaf, label: 'Plants' },
   { to: '/cultivars', icon: Sprout, label: 'Cultivars' },
   { to: '/log', icon: Plus, label: 'Log' },
   { to: '/profile', icon: User, label: 'Profile' },

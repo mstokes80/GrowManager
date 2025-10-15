@@ -74,3 +74,4 @@ dump.rdb
 .minio.sys/
 /agent-os/
 /.claude/
+/CLAUDE.md

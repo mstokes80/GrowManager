@@ -170,6 +170,49 @@ public class AuthController {
     }
 
     /**
+     * Refreshes an expired access token using a valid refresh token.
+     * Issues new access and refresh tokens.
+     *
+     * @param request the refresh token request
+     * @param response the HTTP response for setting cookies
+     * @return authentication response with new tokens and 200 OK status
+     */
+    @PostMapping("/refresh")
+    @Operation(summary = "Refresh access token", description = "Refreshes expired access token using refresh token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Token refreshed successfully",
+                    content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token")
+    })
+    public ResponseEntity<AuthResponse> refreshToken(
+            @Valid @RequestBody RefreshTokenRequest request,
+            HttpServletResponse response) {
+        logger.info("Token refresh request received");
+
+        AuthResponse authResponse = userService.refreshToken(request);
+
+        // Set new access token cookie
+        Cookie accessTokenCookie = createCookie(
+                ACCESS_TOKEN_COOKIE_NAME,
+                authResponse.getAccessToken(),
+                ACCESS_TOKEN_MAX_AGE
+        );
+        response.addCookie(accessTokenCookie);
+
+        // Set new refresh token cookie
+        Cookie refreshTokenCookie = createCookie(
+                REFRESH_TOKEN_COOKIE_NAME,
+                authResponse.getRefreshToken(),
+                REFRESH_TOKEN_MAX_AGE
+        );
+        response.addCookie(refreshTokenCookie);
+
+        logger.info("Token refresh successful");
+
+        return ResponseEntity.ok(authResponse);
+    }
+
+    /**
      * Initiates password reset process.
      * Sends password reset email if email exists in the system.
      *

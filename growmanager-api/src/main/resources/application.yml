@@ -21,6 +21,12 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 100MB
+      enabled: true
+
 server:
   port: ${SERVER_PORT:8080}
   error:

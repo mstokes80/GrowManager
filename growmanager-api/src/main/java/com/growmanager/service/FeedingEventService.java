@@ -1,5 +1,7 @@
 package com.growmanager.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.growmanager.dto.AmendmentDTO;
 import com.growmanager.dto.FeedingEventRequestDTO;
 import com.growmanager.dto.FeedingEventResponseDTO;
 import com.growmanager.entity.FeedingEvent;
@@ -32,6 +34,7 @@ import java.util.stream.Collectors;
 public class FeedingEventService {
 
     private static final Logger logger = LoggerFactory.getLogger(FeedingEventService.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final FeedingEventRepository feedingEventRepository;
     private final PlantRepository plantRepository;
@@ -78,6 +81,9 @@ public class FeedingEventService {
         // Parse feeding type from lowercase string to enum
         FeedingEvent.FeedingType feedingType = parseFeedingType(dto.getFeedingType());
 
+        // Serialize amendments to JSON
+        String amendmentsJson = serializeAmendments(dto.getAmendments());
+
         // Determine which plants to apply feeding event to
         List<Plant> targetPlants;
         if (Boolean.TRUE.equals(dto.getApplyToAllPlants())) {
@@ -101,6 +107,7 @@ public class FeedingEventService {
                         .phLevel(dto.getPhLevel())
                         .nutrientMix(dto.getNutrientMix())
                         .notes(dto.getNotes())
+                        .amendments(amendmentsJson)
                         .fedAt(dto.getFedAt() != null ? dto.getFedAt() : LocalDateTime.now())
                         .build())
                 .collect(Collectors.toList());
@@ -254,6 +261,9 @@ public class FeedingEventService {
         if (dto.getFedAt() != null) {
             feedingEvent.setFedAt(dto.getFedAt());
         }
+        if (dto.getAmendments() != null) {
+            feedingEvent.setAmendments(serializeAmendments(dto.getAmendments()));
+        }
 
         feedingEvent = feedingEventRepository.save(feedingEvent);
 
@@ -398,6 +408,25 @@ public class FeedingEventService {
                 return FeedingEvent.FeedingType.FOLIAR;
             default:
                 throw new IllegalArgumentException("Invalid feeding type: " + feedingTypeStr);
+        }
+    }
+
+    /**
+     * Serializes a list of amendments to JSON string.
+     *
+     * @param amendments the list of amendments
+     * @return JSON string representation, or null if list is null or empty
+     */
+    private String serializeAmendments(List<AmendmentDTO> amendments) {
+        if (amendments == null || amendments.isEmpty()) {
+            return null;
+        }
+
+        try {
+            return objectMapper.writeValueAsString(amendments);
+        } catch (Exception e) {
+            logger.error("Failed to serialize amendments to JSON", e);
+            throw new RuntimeException("Failed to serialize amendments", e);
         }
     }
 }

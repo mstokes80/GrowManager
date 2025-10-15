@@ -5,6 +5,23 @@
 
 export type FeedingType = 'watering' | 'nutrients' | 'foliar';
 
+export type AmendmentUnit =
+  | 'teaspoons'
+  | 'tablespoons'
+  | 'cups'
+  | 'grams'
+  | 'kilograms'
+  | 'ounces'
+  | 'pounds'
+  | 'milliliters'
+  | 'liters';
+
+export interface Amendment {
+  name: string;
+  amount: number;
+  unit: AmendmentUnit;
+}
+
 export interface FeedingEvent {
   id: string;
   plantId: string;
@@ -13,6 +30,7 @@ export interface FeedingEvent {
   ecLevel?: number;
   phLevel?: number;
   nutrientMix?: string;
+  amendments?: Amendment[];
   notes?: string;
   fedAt: string;
   createdAt: string;

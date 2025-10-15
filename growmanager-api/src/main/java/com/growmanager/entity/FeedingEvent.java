@@ -3,6 +3,8 @@ package com.growmanager.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -45,7 +47,7 @@ public class FeedingEvent {
     private User user;
 
     @NotNull(message = "Feeding type is required")
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = FeedingTypeConverter.class)
     @Column(name = "feeding_type", nullable = false, length = 20)
     private FeedingType feedingType;
 
@@ -69,6 +71,10 @@ public class FeedingEvent {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "amendments", columnDefinition = "jsonb")
+    private String amendments;
 
     @NotNull(message = "Fed at timestamp is required")
     @Column(name = "fed_at", nullable = false)

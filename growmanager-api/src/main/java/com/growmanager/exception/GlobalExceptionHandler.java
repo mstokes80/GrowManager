@@ -178,6 +178,22 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles unauthorized access exceptions.
+     */
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Forbidden")
+                .message(ex.getMessage())
+                .build();
+
+        logger.warn("Unauthorized access: {}", ex.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+    }
+
+    /**
      * Handles illegal argument exceptions.
      */
     @ExceptionHandler(IllegalArgumentException.class)

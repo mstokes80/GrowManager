@@ -16,7 +16,7 @@ const mockGrow: Grow = {
   userId: 'user-1',
   name: 'Summer 2025 Indoor',
   startDate: '2025-06-01T00:00:00Z',
-  status: 'vegetative',
+  status: 'active',
   environmentType: 'indoor',
   notes: 'First indoor grow',
   isArchived: false,

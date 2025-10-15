@@ -74,7 +74,7 @@ public class EnvironmentalSnapshot {
     private BigDecimal vpd;
 
     @NotNull(message = "Source is required")
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = SnapshotSourceConverter.class)
     @Column(name = "source", nullable = false, length = 20)
     @Builder.Default
     private SnapshotSource source = SnapshotSource.MANUAL;

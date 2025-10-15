@@ -49,19 +49,13 @@ export function GrowDetailPage() {
     switch (status) {
       case 'planning':
         return 'secondary';
-      case 'germination':
-        return 'warning';
-      case 'vegetative':
+      case 'active':
         return 'success';
       case 'flowering':
         return 'info';
       case 'drying':
         return 'warning';
-      case 'curing':
-        return 'secondary';
-      case 'harvested':
-        return 'success';
-      case 'archived':
+      case 'completed':
         return 'secondary';
       default:
         return 'default';
@@ -99,6 +93,7 @@ export function GrowDetailPage() {
         id,
         data: {
           name: data.name,
+          status: data.status,
           environmentType: data.environmentType,
           notes: data.notes || undefined,
         },
@@ -334,7 +329,7 @@ export function GrowDetailPage() {
 
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-3xl mx-auto">
-          <GrowTabs overviewContent={overviewContent} />
+          <GrowTabs overviewContent={overviewContent} growId={id || ''} />
         </div>
       </div>
 

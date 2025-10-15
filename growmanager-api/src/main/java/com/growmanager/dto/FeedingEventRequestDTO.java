@@ -1,5 +1,6 @@
 package com.growmanager.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * DTO for creating and updating feeding events.
@@ -51,4 +53,11 @@ public class FeedingEventRequestDTO {
      */
     @Builder.Default
     private Boolean applyToAllPlants = false;
+
+    /**
+     * List of soil amendments for organic growing (e.g., kelp meal, dolomite lime).
+     * Optional field for organic growers tracking dry amendments.
+     */
+    @Valid
+    private List<AmendmentDTO> amendments;
 }
