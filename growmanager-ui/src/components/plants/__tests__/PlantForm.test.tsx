@@ -19,6 +19,7 @@ const mockPlant: Plant = {
   stage: 'vegetative',
   healthStatus: 'active',
   notes: 'Test plant notes',
+  sortOrder: 0,
   createdAt: '2025-01-01T00:00:00Z',
   updatedAt: '2025-01-05T00:00:00Z',
   cultivarName: 'Blue Dream',

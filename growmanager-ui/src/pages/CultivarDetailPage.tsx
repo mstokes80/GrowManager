@@ -37,8 +37,7 @@ export default function CultivarDetailPage() {
   const updateCultivarMutation = useUpdateCultivar();
   const deleteCultivarMutation = useDeleteCultivar();
 
-  // Mock usage count - will be replaced when plants API is ready
-  const usageCount: number = 0;
+  const usageCount: number = cultivar?.plantCount || 0;
 
   const getTypeColor = (type: Cultivar['type']): 'success' | 'info' | 'warning' | 'secondary' => {
     switch (type) {

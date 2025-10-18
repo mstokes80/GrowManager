@@ -7,8 +7,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -29,6 +31,15 @@ public class GrowResponse {
     private String status;
     private String environmentType;
     private String notes;
+    private String lightingType;
+    private String mediumType;
+    private String location;
+    private BigDecimal targetTempMin;
+    private BigDecimal targetTempMax;
+    private BigDecimal targetHumidityMin;
+    private BigDecimal targetHumidityMax;
+    private LocalDate expectedHarvestDate;
+    private List<String> tags;
     private Long plantCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -48,6 +59,15 @@ public class GrowResponse {
                 .status(grow.getStatus().toString())
                 .environmentType(grow.getEnvironmentType() != null ? grow.getEnvironmentType().toString() : null)
                 .notes(grow.getNotes())
+                .lightingType(grow.getLightingType() != null ? grow.getLightingType().toString() : null)
+                .mediumType(grow.getMediumType() != null ? grow.getMediumType().toString() : null)
+                .location(grow.getLocation())
+                .targetTempMin(grow.getTargetTempMin())
+                .targetTempMax(grow.getTargetTempMax())
+                .targetHumidityMin(grow.getTargetHumidityMin())
+                .targetHumidityMax(grow.getTargetHumidityMax())
+                .expectedHarvestDate(grow.getExpectedHarvestDate())
+                .tags(grow.getTags())
                 .createdAt(grow.getCreatedAt())
                 .updatedAt(grow.getUpdatedAt())
                 .build();

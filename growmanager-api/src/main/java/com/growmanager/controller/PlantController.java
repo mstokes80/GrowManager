@@ -3,6 +3,7 @@ package com.growmanager.controller;
 import com.growmanager.dto.CreatePlantRequest;
 import com.growmanager.dto.PlantResponse;
 import com.growmanager.dto.UpdatePlantRequest;
+import com.growmanager.dto.UpdateSortOrderRequest;
 import com.growmanager.service.PlantService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -188,6 +189,33 @@ public class PlantController {
         logger.info("Delete plant ID: {} for user ID: {}", id, userId);
 
         plantService.deletePlant(userId, id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Updates the sort order of plants within a grow.
+     *
+     * @param growId the grow ID
+     * @param request the update sort order request containing list of plant IDs with new sort orders
+     * @return 204 NO CONTENT status
+     */
+    @PutMapping("/api/grows/{growId}/plants/sort-order")
+    @Operation(summary = "Update plant sort order", description = "Updates the display order of plants within a grow")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Sort order updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token"),
+            @ApiResponse(responseCode = "403", description = "Email not verified"),
+            @ApiResponse(responseCode = "404", description = "Grow or one or more plants not found")
+    })
+    public ResponseEntity<Void> updatePlantSortOrder(
+            @PathVariable UUID growId,
+            @Valid @RequestBody UpdateSortOrderRequest request) {
+        UUID userId = getUserIdFromAuthentication();
+        logger.info("Update plant sort order for grow ID: {} and user ID: {}", growId, userId);
+
+        plantService.updatePlantSortOrder(userId, growId, request);
 
         return ResponseEntity.noContent().build();
     }

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sprout } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { parseLocalDate } from '@/utils/dateUtils';
 
 interface GrowCardProps {
   grow: Grow;
@@ -34,11 +35,11 @@ export function GrowCard({ grow, onClick }: GrowCardProps) {
   };
 
   const formatStartDate = (dateString: string) => {
-    try {
-      return `Started ${format(new Date(dateString), 'MMM dd, yyyy')}`;
-    } catch (error) {
-      return 'Date unavailable';
+    const date = parseLocalDate(dateString);
+    if (date) {
+      return `Started ${format(date, 'MMM dd, yyyy')}`;
     }
+    return 'Date unavailable';
   };
 
   const formatUpdatedAt = (dateString: string) => {

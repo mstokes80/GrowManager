@@ -19,7 +19,6 @@ describe('VerifiedRoute', () => {
     const verifiedUser: User = {
       id: 1,
       email: 'test@example.com',
-      name: 'Test User',
       emailVerified: true,
       createdAt: '2024-01-01T00:00:00Z',
       updatedAt: '2024-01-01T00:00:00Z',
@@ -52,7 +51,6 @@ describe('VerifiedRoute', () => {
     const unverifiedUser: User = {
       id: 1,
       email: 'test@example.com',
-      name: 'Test User',
       emailVerified: false,
       createdAt: '2024-01-01T00:00:00Z',
       updatedAt: '2024-01-01T00:00:00Z',

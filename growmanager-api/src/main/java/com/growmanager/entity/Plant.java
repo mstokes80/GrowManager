@@ -74,6 +74,11 @@ public class Plant {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    @NotNull(message = "Sort order is required")
+    @Column(name = "sort_order", nullable = false)
+    @Builder.Default
+    private Integer sortOrder = 0;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

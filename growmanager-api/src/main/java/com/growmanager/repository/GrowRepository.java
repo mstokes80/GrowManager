@@ -20,12 +20,12 @@ import java.util.UUID;
 public interface GrowRepository extends JpaRepository<Grow, UUID> {
 
     /**
-     * Finds all grows for a specific user ordered by start date descending.
+     * Finds all grows for a specific user ordered by sortOrder.
      *
      * @param userId the ID of the user
      * @return a list of grows belonging to the user
      */
-    @Query("SELECT g FROM Grow g WHERE g.user.id = :userId ORDER BY g.startDate DESC")
+    @Query("SELECT g FROM Grow g WHERE g.user.id = :userId ORDER BY g.sortOrder ASC")
     List<Grow> findByUserId(@Param("userId") UUID userId);
 
     /**

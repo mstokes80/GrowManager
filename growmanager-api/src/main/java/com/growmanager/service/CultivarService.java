@@ -79,7 +79,7 @@ public class CultivarService {
      * Gets all cultivars for the current user.
      *
      * @param userId the ID of the current user
-     * @return list of cultivar responses
+     * @return list of cultivar responses with plant counts
      */
     @Transactional(readOnly = true)
     public List<CultivarResponse> getCultivarsByUser(UUID userId) {
@@ -88,7 +88,10 @@ public class CultivarService {
         List<Cultivar> cultivars = cultivarRepository.findByUserId(userId);
 
         return cultivars.stream()
-                .map(CultivarResponse::fromEntity)
+                .map(cultivar -> {
+                    long plantCount = plantRepository.countByCultivarId(cultivar.getId());
+                    return CultivarResponse.fromEntity(cultivar, plantCount);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -98,7 +101,7 @@ public class CultivarService {
      *
      * @param userId the ID of the current user
      * @param cultivarId the ID of the cultivar
-     * @return the cultivar response
+     * @return the cultivar response with plant count
      * @throws ResourceNotFoundException if cultivar not found or doesn't belong to user
      */
     @Transactional(readOnly = true)
@@ -115,7 +118,8 @@ public class CultivarService {
             throw new ResourceNotFoundException("Cultivar not found");
         }
 
-        return CultivarResponse.fromEntity(cultivar);
+        long plantCount = plantRepository.countByCultivarId(cultivar.getId());
+        return CultivarResponse.fromEntity(cultivar, plantCount);
     }
 
     /**

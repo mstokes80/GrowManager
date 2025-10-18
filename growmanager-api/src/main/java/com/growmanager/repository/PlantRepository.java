@@ -21,12 +21,12 @@ import java.util.UUID;
 public interface PlantRepository extends JpaRepository<Plant, UUID> {
 
     /**
-     * Finds all plants for a specific grow.
+     * Finds all plants for a specific grow ordered by sortOrder.
      *
      * @param growId the ID of the grow
      * @return a list of plants in the grow
      */
-    @Query("SELECT p FROM Plant p WHERE p.grow.id = :growId ORDER BY p.tag ASC")
+    @Query("SELECT p FROM Plant p WHERE p.grow.id = :growId ORDER BY p.sortOrder ASC")
     List<Plant> findByGrowId(@Param("growId") UUID growId);
 
     /**

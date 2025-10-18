@@ -3,6 +3,7 @@ package com.growmanager.service;
 import com.growmanager.dto.CreatePlantRequest;
 import com.growmanager.dto.PlantResponse;
 import com.growmanager.dto.UpdatePlantRequest;
+import com.growmanager.dto.UpdateSortOrderRequest;
 import com.growmanager.entity.Cultivar;
 import com.growmanager.entity.Grow;
 import com.growmanager.entity.Plant;
@@ -308,5 +309,52 @@ public class PlantService {
         }
 
         return tag;
+    }
+
+    /**
+     * Updates the sort order of plants within a grow.
+     * Validates that all plants belong to a grow owned by the user.
+     *
+     * @param userId the ID of the current user
+     * @param growId the ID of the grow
+     * @param request the update sort order request containing list of plant IDs with new sort orders
+     * @throws ResourceNotFoundException if grow or any plant not found or doesn't belong to user
+     */
+    public void updatePlantSortOrder(UUID userId, UUID growId, UpdateSortOrderRequest request) {
+        logger.info("Updating sort order for {} plants in grow ID: {} for user ID: {}",
+                request.getItems().size(), growId, userId);
+
+        // Validate grow ownership
+        Grow grow = growRepository.findById(growId)
+                .orElseThrow(() -> new ResourceNotFoundException("Grow not found"));
+
+        if (!grow.getUser().getId().equals(userId)) {
+            logger.warn("User {} attempted to update plant sort order for grow {} owned by different user",
+                    userId, growId);
+            throw new ResourceNotFoundException("Grow not found");
+        }
+
+        for (UpdateSortOrderRequest.SortOrderItem item : request.getItems()) {
+            Plant plant = plantRepository.findById(item.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Plant not found: " + item.getId()));
+
+            // Validate plant belongs to the specified grow
+            if (!plant.getGrow().getId().equals(growId)) {
+                logger.warn("Plant {} does not belong to grow {}", item.getId(), growId);
+                throw new ResourceNotFoundException("Plant not found: " + item.getId());
+            }
+
+            // Validate ownership (via grow ownership)
+            if (!plant.getGrow().getUser().getId().equals(userId)) {
+                logger.warn("User {} attempted to update sort order for plant {} owned by different user",
+                        userId, item.getId());
+                throw new ResourceNotFoundException("Plant not found: " + item.getId());
+            }
+
+            plant.setSortOrder(item.getSortOrder());
+            plantRepository.save(plant);
+        }
+
+        logger.info("Sort order updated successfully for {} plants", request.getItems().size());
     }
 }

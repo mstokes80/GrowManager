@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePlantsByGrow, useCreatePlant } from '@/services/plantsApi';
+import { usePlantsByGrow, useCreatePlant, useUpdatePlantSortOrder } from '@/services/plantsApi';
 import { Plant, PlantStage, PlantStatus } from '@/types/plant';
 import { PlantCard } from '@/components/plants/PlantCard';
+import { SortablePlantCard } from '@/components/plants/SortablePlantCard';
 import { PlantForm, PlantFormData } from '@/components/plants/PlantForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,6 +18,21 @@ import {
 } from '@/components/ui/select';
 import { Plus, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 interface PlantsTabProps {
   growId: string;
@@ -34,11 +50,20 @@ export function PlantsTab({ growId }: PlantsTabProps) {
 
   const { data: plants, isLoading, error, refetch } = usePlantsByGrow(growId);
   const createPlantMutation = useCreatePlant();
+  const updateSortOrderMutation = useUpdatePlantSortOrder();
+
+  // Configure drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Filter and sort states
   const [stageFilter, setStageFilter] = useState<PlantStage | 'all'>('all');
   const [healthFilter, setHealthFilter] = useState<PlantStatus | 'all'>('all');
-  const [sortBy, setSortBy] = useState<'tag' | 'cultivar' | 'planted' | 'stage'>('planted');
+  const [sortBy, setSortBy] = useState<'tag' | 'cultivar' | 'planted' | 'stage' | 'sortOrder'>('sortOrder');
 
   // Filter and sort plants
   const filteredAndSortedPlants = useMemo(() => {
@@ -59,6 +84,8 @@ export function PlantsTab({ growId }: PlantsTabProps) {
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
+        case 'sortOrder':
+          return a.sortOrder - b.sortOrder;
         case 'tag':
           return a.plantTag.localeCompare(b.plantTag);
         case 'cultivar':
@@ -116,6 +143,51 @@ export function PlantsTab({ growId }: PlantsTabProps) {
   const handleCloseDialog = () => {
     setIsCreateDialogOpen(false);
     setPlantToCopy(null);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = filteredAndSortedPlants.findIndex((plant) => plant.id === active.id);
+    const newIndex = filteredAndSortedPlants.findIndex((plant) => plant.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    // Optimistically update the UI
+    const newOrder = arrayMove(filteredAndSortedPlants, oldIndex, newIndex);
+
+    try {
+      // Update sort order in the database
+      await updateSortOrderMutation.mutateAsync({
+        growId,
+        data: {
+          items: newOrder.map((plant, index) => ({
+            id: plant.id,
+            sortOrder: index,
+          })),
+        },
+      });
+
+      toast({
+        title: 'Sort order updated',
+        description: 'Plants have been reordered.',
+      });
+    } catch (error) {
+      console.error('Failed to update sort order:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to update sort order',
+        description: 'An error occurred while reordering plants. Please try again.',
+      });
+      // Refetch to restore original order on error
+      refetch();
+    }
   };
 
   // Loading State
@@ -254,6 +326,7 @@ export function PlantsTab({ growId }: PlantsTabProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="sortOrder">Manual Order (Drag & Drop)</SelectItem>
                 <SelectItem value="planted">Planted Date</SelectItem>
                 <SelectItem value="tag">Plant Tag</SelectItem>
                 <SelectItem value="cultivar">Cultivar</SelectItem>
@@ -268,18 +341,44 @@ export function PlantsTab({ growId }: PlantsTabProps) {
           Showing {filteredAndSortedPlants.length} of {plants.length} plants
         </p>
 
-        {/* Plants Grid */}
+        {/* Plants Grid/List */}
         {filteredAndSortedPlants.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredAndSortedPlants.map(plant => (
-              <PlantCard
-                key={plant.id}
-                plant={plant}
-                onClick={() => handleCardClick(plant.id)}
-                onCopy={handleCopyPlant}
-              />
-            ))}
-          </div>
+          sortBy === 'sortOrder' ? (
+            // Vertical list with drag and drop for manual sorting
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={filteredAndSortedPlants.map((p) => p.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="grid grid-cols-1 gap-4">
+                  {filteredAndSortedPlants.map(plant => (
+                    <SortablePlantCard
+                      key={plant.id}
+                      plant={plant}
+                      onClick={() => handleCardClick(plant.id)}
+                      onCopy={handleCopyPlant}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          ) : (
+            // Grid layout for other sorting options
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredAndSortedPlants.map(plant => (
+                <PlantCard
+                  key={plant.id}
+                  plant={plant}
+                  onClick={() => handleCardClick(plant.id)}
+                  onCopy={handleCopyPlant}
+                />
+              ))}
+            </div>
+          )
         ) : (
           <Card>
             <CardContent className="pt-6">
@@ -303,6 +402,7 @@ export function PlantsTab({ growId }: PlantsTabProps) {
             onSubmit={handleCreatePlant}
             onCancel={handleCloseDialog}
             isSubmitting={createPlantMutation.isPending}
+            isCopyMode={!!plantToCopy}
           />
         </DialogContent>
       </Dialog>

@@ -15,6 +15,7 @@ export interface Cultivar {
   type: 'indica' | 'sativa' | 'hybrid' | 'auto' | 'unknown';
   characteristics?: Record<string, any>;
   notes?: string;
+  plantCount?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -178,7 +178,7 @@ export default function CultivarsListPage() {
                   key={cultivar.id}
                   cultivar={cultivar}
                   onClick={() => handleCardClick(cultivar.id)}
-                  usageCount={0} // TODO: Calculate actual usage count when plants API is ready
+                  usageCount={cultivar.plantCount || 0}
                 />
               ))}
             </div>

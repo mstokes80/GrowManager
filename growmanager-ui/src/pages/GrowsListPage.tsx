@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGrows, useCreateGrow } from '@/services/growsApi';
+import { useGrows, useCreateGrow, useUpdateGrowSortOrder } from '@/services/growsApi';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -11,9 +11,25 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { GrowCard } from '@/components/grows/GrowCard';
+import { SortableGrowCard } from '@/components/grows/SortableGrowCard';
 import { GrowForm, GrowFormData } from '@/components/grows/GrowForm';
 import { Plus, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 /**
  * GrowsListPage - Display list of user's grows (active and archived)
@@ -26,14 +42,23 @@ export default function GrowsListPage() {
 
   const { data: grows, isLoading, error, refetch } = useGrows();
   const createGrowMutation = useCreateGrow();
+  const updateSortOrderMutation = useUpdateGrowSortOrder();
 
-  // Separate active and archived grows, sorted by most recently updated
+  // Configure drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Separate active and archived grows, sorted by sortOrder
   const { activeGrows, archivedGrows } = useMemo(() => {
     if (!grows) return { activeGrows: [], archivedGrows: [] };
 
     const active = grows
       .filter((grow) => !grow.isArchived)
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      .sort((a, b) => a.sortOrder - b.sortOrder);
 
     const archived = grows
       .filter((grow) => grow.isArchived)
@@ -44,11 +69,25 @@ export default function GrowsListPage() {
 
   const handleCreateGrow = async (data: GrowFormData) => {
     try {
+      // Transform tags from comma-separated string to array
+      const tags = data.tags
+        ? data.tags.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0)
+        : undefined;
+
       const newGrow = await createGrowMutation.mutateAsync({
         name: data.name,
         startDate: data.startDate,
         environmentType: data.environmentType,
         notes: data.notes || undefined,
+        lightingType: data.lightingType || undefined,
+        mediumType: data.mediumType || undefined,
+        location: data.location || undefined,
+        targetTempMin: data.targetTempMin || undefined,
+        targetTempMax: data.targetTempMax || undefined,
+        targetHumidityMin: data.targetHumidityMin || undefined,
+        targetHumidityMax: data.targetHumidityMax || undefined,
+        expectedHarvestDate: data.expectedHarvestDate || undefined,
+        tags,
       });
 
       toast({
@@ -78,6 +117,48 @@ export default function GrowsListPage() {
       title: 'Refreshed',
       description: 'Grows list has been updated.',
     });
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = activeGrows.findIndex((grow) => grow.id === active.id);
+    const newIndex = activeGrows.findIndex((grow) => grow.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    // Optimistically update the UI
+    const newOrder = arrayMove(activeGrows, oldIndex, newIndex);
+
+    try {
+      // Update sort order in the database
+      await updateSortOrderMutation.mutateAsync({
+        items: newOrder.map((grow, index) => ({
+          id: grow.id,
+          sortOrder: index,
+        })),
+      });
+
+      toast({
+        title: 'Sort order updated',
+        description: 'Grows have been reordered.',
+      });
+    } catch (error) {
+      console.error('Failed to update sort order:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to update sort order',
+        description: 'An error occurred while reordering grows. Please try again.',
+      });
+      // Refetch to restore original order on error
+      refetch();
+    }
   };
 
   return (
@@ -137,11 +218,26 @@ export default function GrowsListPage() {
             {activeGrows.length > 0 && (
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold">Active Grows</h2>
-                <div className="grid grid-cols-1 gap-4">
-                  {activeGrows.map((grow) => (
-                    <GrowCard key={grow.id} grow={grow} onClick={() => handleCardClick(grow.id)} />
-                  ))}
-                </div>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={activeGrows.map((g) => g.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="grid grid-cols-1 gap-4">
+                      {activeGrows.map((grow) => (
+                        <SortableGrowCard
+                          key={grow.id}
+                          grow={grow}
+                          onClick={() => handleCardClick(grow.id)}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
               </div>
             )}
 

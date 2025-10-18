@@ -150,3 +150,40 @@ export const useDeletePlant = () => {
     },
   });
 };
+
+export interface SortOrderItem {
+  id: string;
+  sortOrder: number;
+}
+
+export interface UpdateSortOrderRequest {
+  items: SortOrderItem[];
+}
+
+/**
+ * Update sort order of plants within a grow
+ */
+export const updatePlantSortOrder = async (
+  growId: string,
+  data: UpdateSortOrderRequest
+): Promise<void> => {
+  await api.put(`/api/grows/${growId}/plants/sort-order`, data);
+};
+
+/**
+ * React Query mutation hook to update plant sort order
+ */
+export const useUpdatePlantSortOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ growId, data }: { growId: string; data: UpdateSortOrderRequest }) =>
+      updatePlantSortOrder(growId, data),
+    onSuccess: (_, variables) => {
+      // Invalidate plants list for this grow
+      queryClient.invalidateQueries({ queryKey: ['plants', 'grow', variables.growId] });
+      // Invalidate all plants query
+      queryClient.invalidateQueries({ queryKey: ['plants', 'all'] });
+    },
+  });
+};

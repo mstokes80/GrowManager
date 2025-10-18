@@ -41,6 +41,7 @@ describe('Offline Storage Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -60,6 +61,7 @@ describe('Offline Storage Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -84,6 +86,7 @@ describe('Offline Storage Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -105,6 +108,7 @@ describe('Offline Storage Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -127,6 +131,7 @@ describe('Offline Storage Service', () => {
           status: 'active',
           environmentType: 'indoor',
           isArchived: false,
+          sortOrder: 0,
           createdAt: '2025-01-01T00:00:00Z',
           updatedAt: '2025-01-01T00:00:00Z',
         },
@@ -138,6 +143,7 @@ describe('Offline Storage Service', () => {
           status: 'planning',
           environmentType: 'outdoor',
           isArchived: false,
+          sortOrder: 0,
           createdAt: '2025-02-01T00:00:00Z',
           updatedAt: '2025-02-01T00:00:00Z',
         },
@@ -159,6 +165,7 @@ describe('Offline Storage Service', () => {
           plantedDate: '2025-01-01',
           stage: 'seedling',
           healthStatus: 'active',
+          sortOrder: 0,
           createdAt: '2025-01-01T00:00:00Z',
           updatedAt: '2025-01-01T00:00:00Z',
         },
@@ -169,6 +176,7 @@ describe('Offline Storage Service', () => {
           plantedDate: '2025-01-01',
           stage: 'vegetative',
           healthStatus: 'active',
+          sortOrder: 0,
           createdAt: '2025-01-01T00:00:00Z',
           updatedAt: '2025-01-01T00:00:00Z',
         },
@@ -179,6 +187,7 @@ describe('Offline Storage Service', () => {
           plantedDate: '2025-02-01',
           stage: 'seedling',
           healthStatus: 'active',
+          sortOrder: 0,
           createdAt: '2025-02-01T00:00:00Z',
           updatedAt: '2025-02-01T00:00:00Z',
         },
@@ -202,6 +211,7 @@ describe('Offline Storage Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -226,6 +236,7 @@ describe('Offline Storage Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -246,6 +257,7 @@ describe('Offline Storage Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -267,6 +279,7 @@ describe('Offline Storage Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -290,6 +303,7 @@ describe('Offline Storage Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }

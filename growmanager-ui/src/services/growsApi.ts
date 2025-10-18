@@ -6,6 +6,9 @@ import { api } from '@/lib/api-client';
  * Handles all grow-related API calls and React Query hooks
  */
 
+export type LightingType = 'led' | 'hps' | 'mh' | 'cmh' | 'fluorescent' | 'natural';
+export type MediumType = 'soil' | 'coco' | 'hydro' | 'aeroponics' | 'aquaponics';
+
 export interface Grow {
   id: string;
   userId: string;
@@ -15,7 +18,17 @@ export interface Grow {
   status: 'planning' | 'active' | 'flowering' | 'drying' | 'completed';
   environmentType: 'indoor' | 'outdoor' | 'greenhouse';
   notes?: string;
+  lightingType?: LightingType;
+  mediumType?: MediumType;
+  location?: string;
+  targetTempMin?: number;
+  targetTempMax?: number;
+  targetHumidityMin?: number;
+  targetHumidityMax?: number;
+  expectedHarvestDate?: string;
+  tags?: string[];
   isArchived: boolean;
+  sortOrder: number;
   plantCount?: number;
   createdAt: string;
   updatedAt: string;
@@ -26,6 +39,15 @@ export interface CreateGrowRequest {
   startDate: string;
   environmentType: 'indoor' | 'outdoor' | 'greenhouse';
   notes?: string;
+  lightingType?: LightingType;
+  mediumType?: MediumType;
+  location?: string;
+  targetTempMin?: number;
+  targetTempMax?: number;
+  targetHumidityMin?: number;
+  targetHumidityMax?: number;
+  expectedHarvestDate?: string;
+  tags?: string[];
 }
 
 export interface UpdateGrowRequest {
@@ -34,6 +56,15 @@ export interface UpdateGrowRequest {
   status?: 'planning' | 'active' | 'flowering' | 'drying' | 'completed';
   environmentType?: 'indoor' | 'outdoor' | 'greenhouse';
   notes?: string;
+  lightingType?: LightingType;
+  mediumType?: MediumType;
+  location?: string;
+  targetTempMin?: number;
+  targetTempMax?: number;
+  targetHumidityMin?: number;
+  targetHumidityMax?: number;
+  expectedHarvestDate?: string;
+  tags?: string[];
 }
 
 /**
@@ -190,6 +221,37 @@ export const useDeleteGrow = () => {
 
   return useMutation({
     mutationFn: deleteGrow,
+    onSuccess: () => {
+      // Invalidate and refetch grows list
+      queryClient.invalidateQueries({ queryKey: ['grows'] });
+    },
+  });
+};
+
+export interface SortOrderItem {
+  id: string;
+  sortOrder: number;
+}
+
+export interface UpdateSortOrderRequest {
+  items: SortOrderItem[];
+}
+
+/**
+ * Update sort order of grows
+ */
+export const updateGrowSortOrder = async (data: UpdateSortOrderRequest): Promise<void> => {
+  await api.put('/api/grows/sort-order', data);
+};
+
+/**
+ * React Query mutation hook to update grow sort order
+ */
+export const useUpdateGrowSortOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateGrowSortOrder,
     onSuccess: () => {
       // Invalidate and refetch grows list
       queryClient.invalidateQueries({ queryKey: ['grows'] });

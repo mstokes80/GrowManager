@@ -21,6 +21,7 @@ const mockGrow: Grow = {
   notes: 'First indoor grow',
   isArchived: false,
   plantCount: 4,
+  sortOrder: 0,
   createdAt: '2025-06-01T00:00:00Z',
   updatedAt: '2025-06-10T00:00:00Z',
 };

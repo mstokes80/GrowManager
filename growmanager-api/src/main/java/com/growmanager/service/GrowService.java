@@ -3,6 +3,7 @@ package com.growmanager.service;
 import com.growmanager.dto.CreateGrowRequest;
 import com.growmanager.dto.GrowResponse;
 import com.growmanager.dto.UpdateGrowRequest;
+import com.growmanager.dto.UpdateSortOrderRequest;
 import com.growmanager.entity.Grow;
 import com.growmanager.entity.Grow.GrowStatus;
 import com.growmanager.entity.User;
@@ -65,6 +66,15 @@ public class GrowService {
                 .startDate(request.getStartDate())
                 .environmentType(request.getEnvironmentType())
                 .notes(request.getNotes())
+                .lightingType(request.getLightingType())
+                .mediumType(request.getMediumType())
+                .location(request.getLocation())
+                .targetTempMin(request.getTargetTempMin())
+                .targetTempMax(request.getTargetTempMax())
+                .targetHumidityMin(request.getTargetHumidityMin())
+                .targetHumidityMax(request.getTargetHumidityMax())
+                .expectedHarvestDate(request.getExpectedHarvestDate())
+                .tags(request.getTags())
                 .status(GrowStatus.PLANNING)
                 .build();
 
@@ -171,6 +181,33 @@ public class GrowService {
         if (request.getNotes() != null) {
             grow.setNotes(request.getNotes());
         }
+        if (request.getLightingType() != null) {
+            grow.setLightingType(request.getLightingType());
+        }
+        if (request.getMediumType() != null) {
+            grow.setMediumType(request.getMediumType());
+        }
+        if (request.getLocation() != null) {
+            grow.setLocation(request.getLocation());
+        }
+        if (request.getTargetTempMin() != null) {
+            grow.setTargetTempMin(request.getTargetTempMin());
+        }
+        if (request.getTargetTempMax() != null) {
+            grow.setTargetTempMax(request.getTargetTempMax());
+        }
+        if (request.getTargetHumidityMin() != null) {
+            grow.setTargetHumidityMin(request.getTargetHumidityMin());
+        }
+        if (request.getTargetHumidityMax() != null) {
+            grow.setTargetHumidityMax(request.getTargetHumidityMax());
+        }
+        if (request.getExpectedHarvestDate() != null) {
+            grow.setExpectedHarvestDate(request.getExpectedHarvestDate());
+        }
+        if (request.getTags() != null) {
+            grow.setTags(request.getTags());
+        }
 
         grow = growRepository.save(grow);
 
@@ -274,5 +311,33 @@ public class GrowService {
         growRepository.delete(grow);
 
         logger.info("Grow deleted successfully: {}", growId);
+    }
+
+    /**
+     * Updates the sort order of grows for a user.
+     *
+     * @param userId the ID of the current user
+     * @param request the update sort order request containing list of grow IDs with new sort orders
+     * @throws ResourceNotFoundException if any grow not found or doesn't belong to user
+     */
+    public void updateGrowSortOrder(UUID userId, UpdateSortOrderRequest request) {
+        logger.info("Updating sort order for {} grows for user ID: {}", request.getItems().size(), userId);
+
+        for (UpdateSortOrderRequest.SortOrderItem item : request.getItems()) {
+            Grow grow = growRepository.findById(item.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Grow not found: " + item.getId()));
+
+            // Validate ownership
+            if (!grow.getUser().getId().equals(userId)) {
+                logger.warn("User {} attempted to update sort order for grow {} owned by different user",
+                        userId, item.getId());
+                throw new ResourceNotFoundException("Grow not found: " + item.getId());
+            }
+
+            grow.setSortOrder(item.getSortOrder());
+            growRepository.save(grow);
+        }
+
+        logger.info("Sort order updated successfully for {} grows", request.getItems().size());
     }
 }

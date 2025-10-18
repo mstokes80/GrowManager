@@ -4,8 +4,8 @@ import { useUIStore } from '@/stores/uiStore';
 
 // Get API URL from environment variable with fallback
 // In production (served by nginx), use root path - routes include /api prefix
-// In development, use full URL to backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
+// In development, use empty baseURL to let Vite's proxy handle /api requests
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : '');
 
 // Create axios instance with base configuration
 const apiClient: AxiosInstance = axios.create({

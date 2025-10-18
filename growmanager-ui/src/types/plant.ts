@@ -16,6 +16,7 @@ export interface Plant {
   healthStatus: PlantStatus; // Backend uses PlantStatus (active/harvested/removed/dead)
   notes?: string;
   harvestedDate?: string;
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 

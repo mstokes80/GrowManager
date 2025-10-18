@@ -63,7 +63,7 @@ public interface EnvironmentalSnapshotRepository extends JpaRepository<Environme
      * @param growId the ID of the grow
      * @return the most recent environmental snapshot, or null if none exist
      */
-    @Query(value = "SELECT * FROM environment_snapshots WHERE grow_id = :growId ORDER BY timestamp DESC LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT * FROM environmental_snapshots WHERE grow_id = :growId ORDER BY timestamp DESC LIMIT 1", nativeQuery = true)
     EnvironmentalSnapshot findMostRecentByGrowId(@Param("growId") UUID growId);
 
     /**
@@ -72,7 +72,7 @@ public interface EnvironmentalSnapshotRepository extends JpaRepository<Environme
      * @param plantId the ID of the plant
      * @return the most recent environmental snapshot, or null if none exist
      */
-    @Query(value = "SELECT * FROM environment_snapshots WHERE plant_id = :plantId ORDER BY timestamp DESC LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT * FROM environmental_snapshots WHERE plant_id = :plantId ORDER BY timestamp DESC LIMIT 1", nativeQuery = true)
     EnvironmentalSnapshot findMostRecentByPlantId(@Param("plantId") UUID plantId);
 
     /**
@@ -142,7 +142,7 @@ public interface EnvironmentalSnapshotRepository extends JpaRepository<Environme
      * @param limit the maximum number of results
      * @return a list of recent environmental snapshots
      */
-    @Query(value = "SELECT * FROM environment_snapshots WHERE grow_id = :growId ORDER BY timestamp DESC LIMIT :limit", nativeQuery = true)
+    @Query(value = "SELECT * FROM environmental_snapshots WHERE grow_id = :growId ORDER BY timestamp DESC LIMIT :limit", nativeQuery = true)
     List<EnvironmentalSnapshot> findRecentByGrowId(@Param("growId") UUID growId, @Param("limit") int limit);
 
     /**

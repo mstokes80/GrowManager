@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
 import { HarvestsTab } from '@/components/harvests/HarvestsTab';
 import { PlantsTab } from '@/components/plants/PlantsTab';
+import { EnvironmentTab } from '@/components/environmental/EnvironmentTab';
 
 interface GrowTabsProps {
   overviewContent: React.ReactNode;
@@ -32,13 +32,7 @@ export function GrowTabs({ overviewContent, growId }: GrowTabsProps) {
       </TabsContent>
 
       <TabsContent value="environment" className="mt-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">Environment tracking coming soon</p>
-            </div>
-          </CardContent>
-        </Card>
+        <EnvironmentTab growId={growId} />
       </TabsContent>
 
       <TabsContent value="harvests" className="mt-6">

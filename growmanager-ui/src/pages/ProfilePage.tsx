@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -71,12 +71,22 @@ export default function ProfilePage() {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      displayName: user?.name || '',
+      displayName: user?.displayName || '',
       timezone: user?.timezone || '',
     },
   });
 
   const selectedTimezone = watch('timezone');
+
+  // Reset form values when user data changes
+  useEffect(() => {
+    if (user) {
+      reset({
+        displayName: user.displayName || '',
+        timezone: user.timezone || '',
+      });
+    }
+  }, [user, reset]);
 
   const onSubmit = async (data: ProfileFormData) => {
     try {
@@ -104,7 +114,7 @@ export default function ProfilePage() {
 
   const handleCancel = () => {
     reset({
-      displayName: user?.name || '',
+      displayName: user?.displayName || '',
       timezone: user?.timezone || '',
     });
     setIsEditing(false);

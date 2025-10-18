@@ -3,6 +3,7 @@ package com.growmanager.controller;
 import com.growmanager.dto.CreateGrowRequest;
 import com.growmanager.dto.GrowResponse;
 import com.growmanager.dto.UpdateGrowRequest;
+import com.growmanager.dto.UpdateSortOrderRequest;
 import com.growmanager.entity.Grow.GrowStatus;
 import com.growmanager.service.GrowService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -214,6 +215,30 @@ public class GrowController {
         logger.info("Delete grow ID: {} for user ID: {}", id, userId);
 
         growService.deleteGrow(userId, id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Updates the sort order of grows for the authenticated user.
+     *
+     * @param request the update sort order request containing list of grow IDs with new sort orders
+     * @return 204 NO CONTENT status
+     */
+    @PutMapping("/sort-order")
+    @Operation(summary = "Update grow sort order", description = "Updates the display order of grows for the authenticated user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Sort order updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token"),
+            @ApiResponse(responseCode = "403", description = "Email not verified"),
+            @ApiResponse(responseCode = "404", description = "One or more grows not found")
+    })
+    public ResponseEntity<Void> updateGrowSortOrder(@Valid @RequestBody UpdateSortOrderRequest request) {
+        UUID userId = getUserIdFromAuthentication();
+        logger.info("Update grow sort order for user ID: {}", userId);
+
+        growService.updateGrowSortOrder(userId, request);
 
         return ResponseEntity.noContent().build();
     }

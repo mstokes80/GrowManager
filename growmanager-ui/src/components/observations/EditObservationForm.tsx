@@ -126,6 +126,21 @@ export function EditObservationForm({
   const [compressionProgress, setCompressionProgress] = useState<number[]>([]);
   const { compressImage, isCompressing } = useImageCompression();
 
+  // Format timestamp for datetime-local input (YYYY-MM-DDTHH:mm)
+  const formatTimestampForInput = (timestamp: string) => {
+    // If already in correct format (ISO string), extract just the part we need
+    // This avoids timezone issues when parsing
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(timestamp)) {
+      return timestamp.substring(0, 16); // Extract YYYY-MM-DDTHH:mm
+    }
+    // Fallback to parsing if format is unexpected
+    try {
+      return format(new Date(timestamp), "yyyy-MM-dd'T'HH:mm");
+    } catch (error) {
+      return format(new Date(), "yyyy-MM-dd'T'HH:mm");
+    }
+  };
+
   const {
     register,
     handleSubmit,
@@ -135,7 +150,7 @@ export function EditObservationForm({
   } = useForm<EditObservationFormData>({
     resolver: zodResolver(observationSchema),
     defaultValues: {
-      timestamp: format(new Date(observation.timestamp), "yyyy-MM-dd'T'HH:mm"),
+      timestamp: formatTimestampForInput(observation.timestamp),
       note: observation.note,
       observationType: observation.observationType,
       tags: observation.tags?.join(', ') || '',

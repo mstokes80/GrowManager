@@ -42,6 +42,7 @@ describe('Background Sync Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -67,6 +68,7 @@ describe('Background Sync Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-02T00:00:00Z',
       }
@@ -91,6 +93,7 @@ describe('Background Sync Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -115,6 +118,7 @@ describe('Background Sync Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -140,6 +144,7 @@ describe('Background Sync Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T10:00:00Z',
       }
@@ -174,6 +179,7 @@ describe('Background Sync Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -185,6 +191,7 @@ describe('Background Sync Service', () => {
         plantedDate: '2025-01-01',
         stage: 'seedling',
         healthStatus: 'active',
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -220,6 +227,7 @@ describe('Background Sync Service', () => {
           status: 'active',
           environmentType: 'indoor',
           isArchived: false,
+          sortOrder: 0,
           createdAt: '2025-01-01T00:00:00Z',
           updatedAt: '2025-01-01T00:00:00Z',
         },
@@ -231,6 +239,7 @@ describe('Background Sync Service', () => {
           status: 'active',
           environmentType: 'outdoor',
           isArchived: false,
+          sortOrder: 0,
           createdAt: '2025-01-02T00:00:00Z',
           updatedAt: '2025-01-02T00:00:00Z',
         },
@@ -264,6 +273,7 @@ describe('Background Sync Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }
@@ -294,6 +304,7 @@ describe('Background Sync Service', () => {
           status: 'active',
           environmentType: 'indoor',
           isArchived: false,
+          sortOrder: 0,
           createdAt: '2025-01-01T00:00:00Z',
           updatedAt: '2025-01-01T00:00:00Z',
         }
@@ -324,6 +335,7 @@ describe('Background Sync Service', () => {
         status: 'active',
         environmentType: 'indoor',
         isArchived: false,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       }

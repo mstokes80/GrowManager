@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/layouts/PageHeader';
 import { useGrows } from '@/services/growsApi';
 import { usePlants } from '@/services/plantsApi';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Card,
   CardContent,
@@ -21,6 +22,7 @@ import {
   ArrowRight,
   Loader2,
 } from 'lucide-react';
+import type { Plant } from '@/types/plant';
 
 /**
  * DashboardPage - Main dashboard/home page
@@ -30,6 +32,41 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { data: grows, isLoading: growsLoading } = useGrows();
   const { data: plants, isLoading: plantsLoading } = usePlants();
+
+  // Get status badge colors - matches PlantCard colors
+  const getStageColor = (
+    stage: Plant['stage']
+  ): 'default' | 'secondary' | 'success' | 'warning' | 'info' => {
+    switch (stage) {
+      case 'seedling':
+        return 'warning';
+      case 'vegetative':
+        return 'success';
+      case 'flowering':
+        return 'info';
+      case 'harvested':
+        return 'secondary';
+      default:
+        return 'default';
+    }
+  };
+
+  const getHealthStatusColor = (
+    status: Plant['healthStatus']
+  ): 'default' | 'success' | 'warning' | 'destructive' | 'secondary' => {
+    switch (status) {
+      case 'active':
+        return 'success';
+      case 'harvested':
+        return 'secondary';
+      case 'removed':
+        return 'warning';
+      case 'dead':
+        return 'destructive';
+      default:
+        return 'default';
+    }
+  };
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -258,9 +295,12 @@ export default function DashboardPage() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary capitalize">
+                            <Badge variant={getStageColor(plant.stage)} className="capitalize text-xs">
                               {plant.stage}
-                            </span>
+                            </Badge>
+                            <Badge variant={getHealthStatusColor(plant.healthStatus)} className="capitalize text-xs">
+                              {plant.healthStatus}
+                            </Badge>
                           </div>
                         </div>
                       ))}

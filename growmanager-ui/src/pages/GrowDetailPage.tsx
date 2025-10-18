@@ -25,6 +25,7 @@ import { GrowTabs } from '@/components/grows/GrowTabs';
 import { Edit, MoreVertical, Archive, ArchiveRestore, Trash2, Loader2, AlertCircle, Sprout } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/utils/dateUtils';
 
 /**
  * GrowDetailPage - Display detailed information about a specific grow
@@ -78,17 +79,22 @@ export default function GrowDetailPage() {
   };
 
   const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'MMM dd, yyyy');
-    } catch (error) {
-      return 'Date unavailable';
+    const date = parseLocalDate(dateString);
+    if (date) {
+      return format(date, 'MMM dd, yyyy');
     }
+    return 'Date unavailable';
   };
 
   const handleUpdateGrow = async (data: GrowFormData) => {
     if (!id) return;
 
     try {
+      // Transform tags from comma-separated string to array
+      const tags = data.tags
+        ? data.tags.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0)
+        : undefined;
+
       await updateGrowMutation.mutateAsync({
         id,
         data: {
@@ -96,6 +102,15 @@ export default function GrowDetailPage() {
           status: data.status,
           environmentType: data.environmentType,
           notes: data.notes || undefined,
+          lightingType: data.lightingType || undefined,
+          mediumType: data.mediumType || undefined,
+          location: data.location || undefined,
+          targetTempMin: data.targetTempMin || undefined,
+          targetTempMax: data.targetTempMax || undefined,
+          targetHumidityMin: data.targetHumidityMin || undefined,
+          targetHumidityMax: data.targetHumidityMax || undefined,
+          expectedHarvestDate: data.expectedHarvestDate || undefined,
+          tags,
         },
       });
 
@@ -249,12 +264,12 @@ export default function GrowDetailPage() {
             </div>
           )}
 
-          <div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">Environment Type</p>
-            <Badge variant={getEnvironmentTypeBadgeColor(grow.environmentType)} className="capitalize">
-              {grow.environmentType}
-            </Badge>
-          </div>
+          {grow.expectedHarvestDate && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Expected Harvest Date</p>
+              <p>{formatDate(grow.expectedHarvestDate)}</p>
+            </div>
+          )}
 
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-1">Plant Count</p>
@@ -262,6 +277,93 @@ export default function GrowDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Environment Setup Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Environment Setup</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Environment Type</p>
+            <Badge variant={getEnvironmentTypeBadgeColor(grow.environmentType)} className="capitalize">
+              {grow.environmentType}
+            </Badge>
+          </div>
+
+          {grow.lightingType && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Lighting Type</p>
+              <p className="capitalize">{grow.lightingType}</p>
+            </div>
+          )}
+
+          {grow.mediumType && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Growing Medium</p>
+              <p className="capitalize">{grow.mediumType}</p>
+            </div>
+          )}
+
+          {grow.location && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Location</p>
+              <p>{grow.location}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Target Environmental Ranges Card */}
+      {(grow.targetTempMin !== undefined || grow.targetTempMax !== undefined ||
+        grow.targetHumidityMin !== undefined || grow.targetHumidityMax !== undefined) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Target Environmental Ranges</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(grow.targetTempMin !== undefined || grow.targetTempMax !== undefined) && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Temperature Range</p>
+                <p>
+                  {grow.targetTempMin !== undefined ? `${grow.targetTempMin}°C` : '—'}
+                  {' to '}
+                  {grow.targetTempMax !== undefined ? `${grow.targetTempMax}°C` : '—'}
+                </p>
+              </div>
+            )}
+
+            {(grow.targetHumidityMin !== undefined || grow.targetHumidityMax !== undefined) && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Humidity Range</p>
+                <p>
+                  {grow.targetHumidityMin !== undefined ? `${grow.targetHumidityMin}%` : '—'}
+                  {' to '}
+                  {grow.targetHumidityMax !== undefined ? `${grow.targetHumidityMax}%` : '—'}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tags Card */}
+      {grow.tags && grow.tags.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Tags</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {grow.tags.map((tag, index) => (
+                <Badge key={index} variant="outline">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Notes Card */}
       {grow.notes && (

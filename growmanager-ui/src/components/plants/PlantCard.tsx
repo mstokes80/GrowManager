@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Leaf, AlertTriangle, Activity, Heart, Copy } from 'lucide-react';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/utils/dateUtils';
 
 interface PlantCardProps {
   plant: Plant;
@@ -66,11 +67,11 @@ export function PlantCard({ plant, onClick, onCopy }: PlantCardProps) {
   };
 
   const formatPlantedDate = (dateString: string) => {
-    try {
-      return `Planted ${format(new Date(dateString), 'MMM dd, yyyy')}`;
-    } catch (error) {
-      return 'Date unavailable';
+    const date = parseLocalDate(dateString);
+    if (date) {
+      return `Planted ${format(date, 'MMM dd, yyyy')}`;
     }
+    return 'Date unavailable';
   };
 
   return (

@@ -27,6 +27,13 @@ spring:
       max-request-size: 100MB
       enabled: true
 
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      adjust-dates-to-context-time-zone: false
+    time-zone: UTC
+
 server:
   port: ${SERVER_PORT:8080}
   error:

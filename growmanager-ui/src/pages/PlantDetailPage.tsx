@@ -66,6 +66,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import type { Observation } from '@/types/observation';
+import { parseLocalDate } from '@/utils/dateUtils';
 
 /**
  * PlantDetailPage - Display detailed information about a specific plant
@@ -471,11 +472,11 @@ export default function PlantDetailPage() {
   };
 
   const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'MMM dd, yyyy');
-    } catch (error) {
-      return 'Date unavailable';
+    const date = parseLocalDate(dateString);
+    if (date) {
+      return format(date, 'MMM dd, yyyy');
     }
+    return 'Date unavailable';
   };
 
   return (
@@ -820,6 +821,7 @@ export default function PlantDetailPage() {
             onSubmit={handleCopyPlant}
             onCancel={() => setIsCopyDialogOpen(false)}
             isSubmitting={createPlantMutation.isPending}
+            isCopyMode={true}
           />
         </DialogContent>
       </Dialog>

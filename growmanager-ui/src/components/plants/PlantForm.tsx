@@ -55,14 +55,20 @@ export function PlantForm({
   onSubmit,
   onCancel,
   isSubmitting = false,
+  isCopyMode = false,
 }: PlantFormProps) {
-  // const isEditMode = !!plant;
+  const isEditMode = !!plant && !isCopyMode;
   const { data: cultivars, isLoading: cultivarsLoading } = useCultivars();
 
   // Format date for input field (YYYY-MM-DD)
   const formatDateForInput = (dateString?: string) => {
     if (!dateString) {
       return format(new Date(), 'yyyy-MM-dd');
+    }
+    // If the date is already in YYYY-MM-DD format, return it directly
+    // This avoids timezone issues when parsing LocalDate from backend
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      return dateString;
     }
     try {
       return format(new Date(dateString), 'yyyy-MM-dd');
@@ -88,7 +94,7 @@ export function PlantForm({
   } = useForm<PlantFormData>({
     resolver: zodResolver(plantSchema),
     defaultValues: {
-      plantTag: '', // Always empty to force user to enter a new tag
+      plantTag: isEditMode ? plant?.plantTag || '' : '', // Empty for copy mode, populated for edit mode
       cultivarId: plant?.cultivarId || '',
       plantedDate: formatDateForInput(plant?.plantedDate),
       stage: plant?.stage || 'seedling',
@@ -257,7 +263,7 @@ export function PlantForm({
           </Button>
         )}
         <Button type="submit" disabled={isSubmitting} className="flex-1">
-          {isSubmitting ? 'Saving...' : plant ? 'Update Plant' : 'Create Plant'}
+          {isSubmitting ? 'Saving...' : isCopyMode ? 'Copy Plant' : plant ? 'Update Plant' : 'Create Plant'}
         </Button>
       </div>
     </form>

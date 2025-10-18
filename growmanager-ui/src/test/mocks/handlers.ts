@@ -24,6 +24,7 @@ export const createMockPlant = (overrides?: Partial<Plant>): Plant => ({
   createdAt: '2025-01-01T00:00:00Z',
   updatedAt: '2025-01-05T00:00:00Z',
   cultivarName: 'Blue Dream',
+  sortOrder: 0,
   ...overrides,
 });
 
@@ -260,6 +261,7 @@ export const handlers = [
         notes: 'First grow of the year',
         isArchived: false,
         plantCount: 3,
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-05T00:00:00Z',
       },
@@ -273,6 +275,7 @@ export const handlers = [
         notes: 'Outdoor harvest',
         isArchived: true,
         plantCount: 6,
+        sortOrder: 1,
         createdAt: '2024-09-01T00:00:00Z',
         updatedAt: '2024-11-15T00:00:00Z',
       },

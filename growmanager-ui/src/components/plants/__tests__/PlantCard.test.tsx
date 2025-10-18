@@ -12,6 +12,7 @@ const mockPlant: Plant = {
   stage: 'vegetative',
   healthStatus: 'active',
   notes: 'Test plant',
+  sortOrder: 0,
   createdAt: '2025-01-01T00:00:00Z',
   updatedAt: '2025-01-05T00:00:00Z',
   cultivarName: 'Blue Dream',
@@ -247,6 +248,7 @@ describe('PlantCard', () => {
         plantedDate: '2025-01-01T00:00:00Z',
         stage: 'seedling',
         healthStatus: 'active',
+        sortOrder: 0,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       };
