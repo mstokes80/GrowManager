@@ -71,7 +71,7 @@ import type { Observation } from '@/types/observation';
  * PlantDetailPage - Display detailed information about a specific plant
  * Implements Task Group 6.4.3 and integrates timeline and forms
  */
-export function PlantDetailPage() {
+export default function PlantDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -116,7 +116,7 @@ export function PlantDetailPage() {
           plantTag: data.plantTag,
           cultivarId: data.cultivarId || undefined,
           stage: data.stage,
-          healthStatus: data.healthStatus,
+          healthStatus: data.healthStatus, // PlantStatus directly, no mapping needed
           notes: data.notes || undefined,
         },
       });
@@ -147,7 +147,7 @@ export function PlantDetailPage() {
         cultivarId: data.cultivarId || undefined,
         plantedDate: data.plantedDate,
         stage: data.stage,
-        healthStatus: data.healthStatus,
+        healthStatus: data.healthStatus, // PlantStatus directly, no mapping needed
         notes: data.notes || undefined,
       });
 
@@ -377,9 +377,18 @@ export function PlantDetailPage() {
     if (!id) return;
 
     try {
+      // Convert empty strings to undefined for optional numeric fields
+      const harvestData = {
+        ...data,
+        dryWeight: data.dryWeight === '' ? undefined : data.dryWeight,
+        thcPercent: data.thcPercent === '' ? undefined : data.thcPercent,
+        cbdPercent: data.cbdPercent === '' ? undefined : data.cbdPercent,
+        qualityRating: data.qualityRating === '' ? undefined : data.qualityRating,
+      };
+
       await createHarvestMutation.mutateAsync({
         plantId: id,
-        data,
+        data: harvestData,
       });
 
       toast({
@@ -448,11 +457,12 @@ export function PlantDetailPage() {
 
   const getHealthStatusColor = (status: string) => {
     switch (status) {
-      case 'healthy':
+      case 'active':
         return 'success';
-      case 'stressed':
+      case 'harvested':
+        return 'secondary';
+      case 'removed':
         return 'warning';
-      case 'sick':
       case 'dead':
         return 'destructive';
       default:
@@ -502,7 +512,7 @@ export function PlantDetailPage() {
               <span className="hidden sm:inline">Log Activity</span>
               <span className="sm:hidden">Activity</span>
             </Button>
-            {(plant.stage === 'flowering' || plant.stage === 'harvest') && (
+            {(plant.stage === 'flowering' || plant.stage === 'harvested') && (
               <Button
                 size="sm"
                 variant="outline"
@@ -668,9 +678,9 @@ export function PlantDetailPage() {
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                          {observation.photos.length > 0 && (
+                          {observation.photos.length > 0 && observation.photos[0] && (
                             <div className="flex-shrink-0">
-                              <img
+                              <img loading="lazy" decoding="async"
                                 src={observation.photos[0].thumbnailUrl}
                                 alt="Observation"
                                 className="w-20 h-20 object-cover rounded"
@@ -708,14 +718,6 @@ export function PlantDetailPage() {
               <PhotoGallery
                 observations={observations}
                 isLoading={observationsLoading}
-                onPhotoClick={(photoUrl) => {
-                  const observation = observations.find((obs) =>
-                    obs.photos.some((p) => p.fullSizeUrl === photoUrl)
-                  );
-                  if (observation) {
-                    handleObservationClick(observation);
-                  }
-                }}
               />
             </TabsContent>
           </Tabs>

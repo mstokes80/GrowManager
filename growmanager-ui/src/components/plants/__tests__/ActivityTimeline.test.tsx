@@ -167,12 +167,12 @@ describe('ActivityTimeline', () => {
     it('groups multiple items on the same day', () => {
       const sameDayEvents: FeedingEvent[] = [
         {
-          ...mockFeedingEvents[0],
+          ...mockFeedingEvents[0]!,
           id: 'feeding-1',
           fedAt: '2025-01-05T10:00:00Z',
         },
         {
-          ...mockFeedingEvents[0],
+          ...mockFeedingEvents[0]!,
           id: 'feeding-2',
           feedingType: 'watering',
           fedAt: '2025-01-05T14:00:00Z',
@@ -191,7 +191,7 @@ describe('ActivityTimeline', () => {
     it('shows load more button when there are more than 20 items', () => {
       // Create 25 feeding events
       const manyEvents: FeedingEvent[] = Array.from({ length: 25 }, (_, i) => ({
-        ...mockFeedingEvents[0],
+        ...mockFeedingEvents[0]!,
         id: `feeding-${i}`,
         fedAt: new Date(2025, 0, i + 1, 10, 0, 0).toISOString(),
       }));
@@ -216,7 +216,7 @@ describe('ActivityTimeline', () => {
 
       // Create 25 feeding events
       const manyEvents: FeedingEvent[] = Array.from({ length: 25 }, (_, i) => ({
-        ...mockFeedingEvents[0],
+        ...mockFeedingEvents[0]!,
         id: `feeding-${i}`,
         feedingType: i % 2 === 0 ? ('nutrients' as const) : ('watering' as const),
         fedAt: new Date(2025, 0, i + 1, 10, 0, 0).toISOString(),
@@ -258,7 +258,7 @@ describe('ActivityTimeline', () => {
 
     it('handles invalid dates gracefully', () => {
       const invalidEvent: FeedingEvent = {
-        ...mockFeedingEvents[0],
+        ...mockFeedingEvents[0]!,
         fedAt: 'invalid-date',
       };
 
@@ -279,7 +279,7 @@ describe('ActivityTimeline', () => {
 
     it('shows correct remaining count in load more button', () => {
       const manyEvents: FeedingEvent[] = Array.from({ length: 30 }, (_, i) => ({
-        ...mockFeedingEvents[0],
+        ...mockFeedingEvents[0]!,
         id: `feeding-${i}`,
         fedAt: new Date(2025, 0, i + 1, 10, 0, 0).toISOString(),
       }));

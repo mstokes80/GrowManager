@@ -25,6 +25,7 @@ export interface CreateActivityLogRequest {
   description: string;
   notes?: string;
   loggedAt: string;
+  applyToAllPlants?: boolean;
 }
 
 export interface UpdateActivityLogRequest {

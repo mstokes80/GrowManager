@@ -12,6 +12,14 @@ import type {
  */
 
 /**
+ * Get all plants for the authenticated user across all grows
+ */
+export const getAllPlants = async (): Promise<Plant[]> => {
+  const response = await api.get<Plant[]>('/api/plants');
+  return response.data;
+};
+
+/**
  * Get all plants for a specific grow
  */
 export const getPlantsByGrow = async (growId: string): Promise<Plant[]> => {
@@ -55,6 +63,17 @@ export const deletePlant = async (id: string): Promise<void> => {
 };
 
 /**
+ * React Query hook to fetch all plants for the authenticated user
+ */
+export const usePlants = () => {
+  return useQuery({
+    queryKey: ['plants', 'all'],
+    queryFn: getAllPlants,
+    staleTime: 30000, // 30 seconds
+  });
+};
+
+/**
  * React Query hook to fetch all plants for a grow
  */
 export const usePlantsByGrow = (growId: string) => {
@@ -85,6 +104,8 @@ export const useCreatePlant = () => {
   return useMutation({
     mutationFn: createPlant,
     onSuccess: (newPlant) => {
+      // Invalidate all plants query for dashboard
+      queryClient.invalidateQueries({ queryKey: ['plants', 'all'] });
       // Invalidate plants list for this grow
       queryClient.invalidateQueries({ queryKey: ['plants', 'grow', newPlant.growId] });
       // Invalidate grow details to update plant count
@@ -103,6 +124,8 @@ export const useUpdatePlant = () => {
     mutationFn: ({ id, data }: { id: string; data: UpdatePlantRequest }) =>
       updatePlant(id, data),
     onSuccess: (updatedPlant) => {
+      // Invalidate all plants query for dashboard
+      queryClient.invalidateQueries({ queryKey: ['plants', 'all'] });
       // Invalidate plants list for this grow
       queryClient.invalidateQueries({ queryKey: ['plants', 'grow', updatedPlant.growId] });
       // Invalidate the specific plant

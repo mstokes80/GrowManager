@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
  * NotFound (404) page displays when user navigates to an invalid route.
  * Provides a friendly message and navigation back to the app.
  */
-export function NotFound() {
+export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="max-w-md w-full">

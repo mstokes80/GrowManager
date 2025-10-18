@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useHarvest, useUpdateHarvest, useDeleteHarvest } from '@/services/harvestsApi';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -31,7 +31,7 @@ import { useToast } from '@/hooks/use-toast';
  * HarvestDetailPage - Displays full harvest details with edit capability
  * Implements Task Group 8.3.6
  */
-export function HarvestDetailPage() {
+export default function HarvestDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -44,7 +44,16 @@ export function HarvestDetailPage() {
 
   const handleUpdate = async (data: UpdateHarvestFormData) => {
     try {
-      await updateMutation.mutateAsync({ id: id!, data });
+      // Convert empty strings to undefined for optional numeric fields
+      const updateData = {
+        ...data,
+        dryWeight: data.dryWeight === '' ? undefined : data.dryWeight,
+        thcPercent: data.thcPercent === '' ? undefined : data.thcPercent,
+        cbdPercent: data.cbdPercent === '' ? undefined : data.cbdPercent,
+        qualityRating: data.qualityRating === '' ? undefined : data.qualityRating,
+      };
+
+      await updateMutation.mutateAsync({ id: id!, data: updateData });
       toast({
         title: 'Success!',
         description: 'Harvest updated successfully',

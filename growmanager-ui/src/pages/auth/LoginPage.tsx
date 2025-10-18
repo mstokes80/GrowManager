@@ -31,7 +31,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
  * LoginPage - User login with email and password
  * Implements Task Group 4.3.2
  */
-export function LoginPage() {
+export default function LoginPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);

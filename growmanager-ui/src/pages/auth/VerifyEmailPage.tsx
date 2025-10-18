@@ -19,7 +19,7 @@ type VerificationState = 'verifying' | 'success' | 'error' | 'manual';
  * 1. Automatic verification when user clicks link in email (token in URL)
  * 2. Manual resend verification email form
  */
-export function VerifyEmailPage() {
+export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();

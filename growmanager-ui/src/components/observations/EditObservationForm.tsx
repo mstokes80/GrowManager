@@ -165,6 +165,12 @@ export function EditObservationForm({
 
       for (let i = 0; i < acceptedFiles.length; i++) {
         const file = acceptedFiles[i];
+
+        // Skip if file is undefined (shouldn't happen, but TypeScript safety)
+        if (!file) {
+          continue;
+        }
+
         setCompressionProgress((prev) => {
           const newProgress = [...prev];
           newProgress[newPhotos.length + i] = 0;
@@ -226,7 +232,7 @@ export function EditObservationForm({
   };
 
   // Mark existing photo for removal
-  const markPhotoForRemoval = (fullSizeUrl: string, thumbnailUrl: string) => {
+  const markPhotoForRemoval = (fullSizeUrl: string, _thumbnailUrl: string) => {
     setPhotoToRemove(fullSizeUrl);
   };
 
@@ -360,7 +366,7 @@ export function EditObservationForm({
                 const isMarkedForRemoval = photosToRemove.includes(photo.fullSizeUrl);
                 return (
                   <div key={photo.fullSizeUrl} className="relative group">
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={photo.thumbnailUrl}
                       alt="Observation"
                       className={`w-full h-24 object-cover rounded-md ${
@@ -428,9 +434,9 @@ export function EditObservationForm({
             {/* New Photo Previews */}
             {newPhotos.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
-                {newPhotos.map((photo, index) => (
+                {newPhotos.map((_photo, index) => (
                   <div key={index} className="relative group">
-                    <img
+                    <img loading="lazy" decoding="async"
                       src={newPhotoPreviewUrls[index]}
                       alt={`New preview ${index + 1}`}
                       className="w-full h-24 object-cover rounded-md"

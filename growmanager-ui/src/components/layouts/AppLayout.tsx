@@ -9,8 +9,16 @@ import { BottomNav } from '@/components/navigation/BottomNav';
 export function AppLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* Skip to main content link for keyboard navigation */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+
       {/* Main Content Area - grows to fill available space */}
-      <main className="flex-1 pb-16 md:pb-0">
+      <main id="main-content" className="flex-1 pb-16 md:pb-0" tabIndex={-1}>
         <Outlet />
       </main>
 

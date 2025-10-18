@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast';
  * CultivarDetailPage - Display detailed information about a specific cultivar
  * Implements Task Group 5.1.5
  */
-export function CultivarDetailPage() {
+export default function CultivarDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();

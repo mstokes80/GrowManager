@@ -30,7 +30,7 @@ import { format } from 'date-fns';
  * GrowDetailPage - Display detailed information about a specific grow
  * Implements Task Group 5.2.6
  */
-export function GrowDetailPage() {
+export default function GrowDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();

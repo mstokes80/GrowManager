@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import { CultivarsListPage } from '@/pages/CultivarsListPage';
+import CultivarsListPage from '@/pages/CultivarsListPage';
 import * as cultivarsApi from '@/services/cultivarsApi';
 
 // Mock the cultivars API

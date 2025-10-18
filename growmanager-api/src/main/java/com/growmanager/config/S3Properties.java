@@ -14,9 +14,16 @@ import org.springframework.context.annotation.Configuration;
 public class S3Properties {
 
     /**
-     * MinIO/S3 endpoint URL (e.g., http://localhost:9000).
+     * MinIO/S3 endpoint URL for internal connections (e.g., http://minio:9000).
+     * Used by S3Client for uploading/downloading files.
      */
     private String endpoint;
+
+    /**
+     * Public endpoint URL for generating accessible image URLs (e.g., http://localhost:9000).
+     * Falls back to endpoint if not specified.
+     */
+    private String publicEndpoint;
 
     /**
      * Access key for authentication.

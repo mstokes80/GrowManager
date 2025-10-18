@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/layouts/PageHeader';
 /**
  * SettingsPage - App settings and preferences
  */
-export function SettingsPage() {
+export default function SettingsPage() {
   return (
     <div>
       <PageHeader

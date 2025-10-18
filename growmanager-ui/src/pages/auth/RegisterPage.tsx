@@ -40,7 +40,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
  * RegisterPage - User registration with email verification
  * Implements Task Group 4.3.3
  */
-export function RegisterPage() {
+export default function RegisterPage() {
   const navigate = useNavigate();
   const [showSuccess, setShowSuccess] = useState(false);
 

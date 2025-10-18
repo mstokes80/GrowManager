@@ -5,6 +5,9 @@ import type {
   CreateObservationRequest,
   UpdateObservationRequest,
 } from '@/types/observation';
+import { addPhotoToQueue } from './photoUploadService';
+import { addToSyncQueue } from './offlineStorage';
+import { db } from '@/lib/db';
 
 /**
  * Observations API Service
@@ -29,12 +32,68 @@ export const getObservationById = async (id: string): Promise<Observation> => {
 
 /**
  * Create a new observation with photos
+ * Supports offline mode: photos are queued and observation is stored locally
  */
 export const createObservation = async (
   plantId: string,
   data: CreateObservationRequest,
   files?: File[]
 ): Promise<Observation> => {
+  // Check if offline
+  const isOffline = !navigator.onLine;
+
+  if (isOffline) {
+    // Create observation offline
+    const observationId = `obs-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    const now = new Date().toISOString();
+
+    // Add photos to queue
+    const photoIds: string[] = [];
+    const photoUrls: string[] = [];
+    if (files && files.length > 0) {
+      for (const file of files) {
+        const { photoId, localUrl } = await addPhotoToQueue(file, 'observations', observationId);
+        photoIds.push(photoId);
+        photoUrls.push(localUrl);
+      }
+    }
+
+    // Get plant name for the observation
+    const plant = await db.plants.get(plantId);
+    const plantName = plant?.plantTag || 'Unknown Plant';
+
+    // Create offline observation with local photo URLs
+    const observation: Observation = {
+      id: observationId,
+      plantId,
+      plantName,
+      timestamp: data.timestamp,
+      note: data.note,
+      observationType: data.observationType,
+      tags: data.tags || [],
+      photos: photoUrls.map((url, index) => ({
+        thumbnailUrl: url,
+        fullSizeUrl: url,
+        photoId: photoIds[index] || '',
+      })),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    // Store in IndexedDB
+    await db.observations.add(observation);
+
+    // Add to sync queue with complete observation data
+    await addToSyncQueue('create', 'observations', {
+      ...observation,
+      photoIds, // Include photoIds so sync knows which photos belong to this observation
+    } as any);
+
+    console.log(`Observation ${observationId} created offline with ${photoIds.length} photos queued`);
+    return observation;
+  }
+
+  // Online: use existing flow
   const formData = new FormData();
 
   // Append observation data fields

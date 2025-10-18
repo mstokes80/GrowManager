@@ -107,8 +107,11 @@ export function CultivarForm({
   // Update a characteristic key or value
   const updateCharacteristic = (index: number, field: 'key' | 'value', newValue: string) => {
     const updated = [...characteristics];
-    updated[index][field] = newValue;
-    setCharacteristics(updated);
+    const item = updated[index];
+    if (item) {
+      item[field] = newValue;
+      setCharacteristics(updated);
+    }
   };
 
   // Convert characteristics to JSON before submit

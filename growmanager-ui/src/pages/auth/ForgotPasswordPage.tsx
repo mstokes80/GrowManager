@@ -26,7 +26,7 @@ type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
  * ForgotPasswordPage - Request password reset email
  * Implements Task Group 4.3.5
  */
-export function ForgotPasswordPage() {
+export default function ForgotPasswordPage() {
   const [showSuccess, setShowSuccess] = useState(false);
 
   const {

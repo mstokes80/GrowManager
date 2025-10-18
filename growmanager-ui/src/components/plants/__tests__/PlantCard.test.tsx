@@ -10,7 +10,7 @@ const mockPlant: Plant = {
   plantTag: 'Plant #1',
   plantedDate: '2025-01-01T00:00:00Z',
   stage: 'vegetative',
-  healthStatus: 'healthy',
+  healthStatus: 'active',
   notes: 'Test plant',
   createdAt: '2025-01-01T00:00:00Z',
   updatedAt: '2025-01-05T00:00:00Z',
@@ -47,7 +47,7 @@ describe('PlantCard', () => {
 
     it('displays health status badge with correct text', () => {
       render(<PlantCard plant={mockPlant} />);
-      expect(screen.getByText('healthy')).toBeInTheDocument();
+      expect(screen.getByText('active')).toBeInTheDocument();
     });
 
     it('displays planted date in correct format', () => {
@@ -93,24 +93,24 @@ describe('PlantCard', () => {
   });
 
   describe('Health Status Colors', () => {
-    it('displays healthy status with success color', () => {
-      const healthyPlant = { ...mockPlant, healthStatus: 'healthy' as const };
-      render(<PlantCard plant={healthyPlant} />);
-      const healthBadge = screen.getByText('healthy');
+    it('displays active status with success color', () => {
+      const activePlant = { ...mockPlant, healthStatus: 'active' as const };
+      render(<PlantCard plant={activePlant} />);
+      const healthBadge = screen.getByText('active');
       expect(healthBadge).toBeInTheDocument();
     });
 
-    it('displays stressed status with warning color', () => {
-      const stressedPlant = { ...mockPlant, healthStatus: 'stressed' as const };
-      render(<PlantCard plant={stressedPlant} />);
-      const healthBadge = screen.getByText('stressed');
+    it('displays harvested status with secondary color', () => {
+      const harvestedPlant = { ...mockPlant, healthStatus: 'harvested' as const };
+      render(<PlantCard plant={harvestedPlant} />);
+      const healthBadge = screen.getByText('harvested');
       expect(healthBadge).toBeInTheDocument();
     });
 
-    it('displays sick status with destructive color', () => {
-      const sickPlant = { ...mockPlant, healthStatus: 'sick' as const };
-      render(<PlantCard plant={sickPlant} />);
-      const healthBadge = screen.getByText('sick');
+    it('displays removed status with warning color', () => {
+      const removedPlant = { ...mockPlant, healthStatus: 'removed' as const };
+      render(<PlantCard plant={removedPlant} />);
+      const healthBadge = screen.getByText('removed');
       expect(healthBadge).toBeInTheDocument();
     });
 
@@ -207,7 +207,7 @@ describe('PlantCard', () => {
     it('displays visual icon for health status', () => {
       render(<PlantCard plant={mockPlant} />);
       // Check that SVG icon is rendered (lucide-react renders SVGs)
-      const healthBadge = screen.getByText('healthy').closest('span');
+      const healthBadge = screen.getByText('active').closest('span');
       expect(healthBadge).toBeInTheDocument();
     });
   });
@@ -233,7 +233,7 @@ describe('PlantCard', () => {
 
     it('capitalizes health status badge text', () => {
       render(<PlantCard plant={mockPlant} />);
-      const healthBadge = screen.getByText('healthy');
+      const healthBadge = screen.getByText('active');
       expect(healthBadge).toHaveClass('capitalize');
     });
   });
@@ -246,7 +246,7 @@ describe('PlantCard', () => {
         plantTag: 'A1',
         plantedDate: '2025-01-01T00:00:00Z',
         stage: 'seedling',
-        healthStatus: 'healthy',
+        healthStatus: 'active',
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       };
@@ -254,7 +254,7 @@ describe('PlantCard', () => {
       render(<PlantCard plant={minimalPlant} />);
       expect(screen.getByText('A1')).toBeInTheDocument();
       expect(screen.getByText('seedling')).toBeInTheDocument();
-      expect(screen.getByText('healthy')).toBeInTheDocument();
+      expect(screen.getByText('active')).toBeInTheDocument();
     });
 
     it('truncates long plant tag text', () => {

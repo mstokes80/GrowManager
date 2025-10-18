@@ -333,7 +333,7 @@ export function CreateObservationForm({
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
             {photos.map((_file, index) => (
               <div key={index} className="relative group">
-                <img
+                <img loading="lazy" decoding="async"
                   src={photoPreviewUrls[index]}
                   alt={`Preview ${index + 1}`}
                   className="w-full h-24 object-cover rounded-md"

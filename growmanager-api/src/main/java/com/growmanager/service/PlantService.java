@@ -123,6 +123,23 @@ public class PlantService {
     }
 
     /**
+     * Gets all plants for a user across all grows.
+     *
+     * @param userId the ID of the current user
+     * @return list of all user's plant responses
+     */
+    @Transactional(readOnly = true)
+    public List<PlantResponse> getAllUserPlants(UUID userId) {
+        logger.info("Fetching all plants for user ID: {}", userId);
+
+        List<Plant> plants = plantRepository.findByUserId(userId);
+
+        return plants.stream()
+                .map(PlantResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Gets all plants for a grow.
      * Validates that the grow belongs to the current user.
      *

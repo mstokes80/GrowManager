@@ -3,7 +3,9 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 
 // Get API URL from environment variable with fallback
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// In production (served by nginx), use root path - routes include /api prefix
+// In development, use full URL to backend
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8080' : '');
 
 // Create axios instance with base configuration
 const apiClient: AxiosInstance = axios.create({

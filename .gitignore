@@ -75,3 +75,5 @@ dump.rdb
 /agent-os/
 /.claude/
 /CLAUDE.md
+/growmanager-ui/playwright-report/
+/.env.production

@@ -17,7 +17,7 @@ const mockPlant: Plant = {
   plantTag: 'Plant #1',
   plantedDate: '2025-01-01T00:00:00Z',
   stage: 'vegetative',
-  healthStatus: 'healthy',
+  healthStatus: 'active',
   notes: 'Test plant notes',
   createdAt: '2025-01-01T00:00:00Z',
   updatedAt: '2025-01-05T00:00:00Z',
@@ -131,8 +131,8 @@ describe('PlantForm', () => {
 
       const healthStatusSelect = screen.getByLabelText(/health status/i);
       await user.click(healthStatusSelect);
-      const healthyOption = screen.getByText('Healthy');
-      await user.click(healthyOption);
+      const activeOption = screen.getByText('Active');
+      await user.click(activeOption);
 
       const notesInput = screen.getByLabelText(/notes/i);
       await user.type(notesInput, 'Test notes');
@@ -146,7 +146,7 @@ describe('PlantForm', () => {
           cultivarId: '',
           plantedDate: '2025-01-01',
           stage: 'vegetative',
-          healthStatus: 'healthy',
+          healthStatus: 'active',
           notes: 'Test notes',
         });
       });
@@ -251,11 +251,11 @@ describe('PlantForm', () => {
       await user.click(healthStatusSelect);
 
       await waitFor(() => {
-        expect(screen.getByText('Healthy')).toBeInTheDocument();
+        expect(screen.getByText('Active')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Stressed')).toBeInTheDocument();
-      expect(screen.getByText('Sick')).toBeInTheDocument();
+      expect(screen.getByText('Harvested')).toBeInTheDocument();
+      expect(screen.getByText('Removed')).toBeInTheDocument();
       expect(screen.getByText('Dead')).toBeInTheDocument();
     });
 
@@ -441,7 +441,7 @@ describe('PlantForm', () => {
       });
     });
 
-    it('defaults health status to healthy in create mode', async () => {
+    it('defaults health status to active in create mode', async () => {
       const { userEvent } = await import('@testing-library/user-event');
       const user = userEvent.setup();
       const mockOnSubmit = vi.fn();
@@ -457,7 +457,7 @@ describe('PlantForm', () => {
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalled();
         const submittedData = mockOnSubmit.mock.calls[0][0];
-        expect(submittedData.healthStatus).toBe('healthy');
+        expect(submittedData.healthStatus).toBe('active');
       });
     });
   });

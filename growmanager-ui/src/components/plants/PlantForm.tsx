@@ -28,7 +28,7 @@ const plantSchema = z.object({
   stage: z.enum(['seedling', 'vegetative', 'flowering', 'harvested'], {
     errorMap: () => ({ message: 'Please select a stage' }),
   }),
-  healthStatus: z.enum(['active', 'dead'], {
+  healthStatus: z.enum(['active', 'harvested', 'removed', 'dead'], {
     errorMap: () => ({ message: 'Please select a status' }),
   }),
   notes: z.string().max(1000, 'Notes must be 1000 characters or less').optional(),
@@ -71,6 +71,14 @@ export function PlantForm({
     }
   };
 
+  // Map PlantStatus to form value
+  const mapHealthStatusToFormValue = (status?: string): 'active' | 'harvested' | 'removed' | 'dead' => {
+    if (status === 'dead') return 'dead';
+    if (status === 'harvested') return 'harvested';
+    if (status === 'removed') return 'removed';
+    return 'active';
+  };
+
   const {
     register,
     handleSubmit,
@@ -84,7 +92,7 @@ export function PlantForm({
       cultivarId: plant?.cultivarId || '',
       plantedDate: formatDateForInput(plant?.plantedDate),
       stage: plant?.stage || 'seedling',
-      healthStatus: plant?.healthStatus || 'active',
+      healthStatus: mapHealthStatusToFormValue(plant?.healthStatus),
       notes: plant?.notes || '',
     },
   });
@@ -202,6 +210,8 @@ export function PlantForm({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="harvested">Harvested</SelectItem>
+            <SelectItem value="removed">Removed</SelectItem>
             <SelectItem value="dead">Dead</SelectItem>
           </SelectContent>
         </Select>
@@ -215,7 +225,7 @@ export function PlantForm({
           </p>
         )}
         <p className="text-xs text-muted-foreground">
-          Active: Plant is alive and growing | Dead: Plant has died
+          Active: Growing | Harvested: Completed harvest | Removed: Culled/discarded | Dead: Plant died
         </p>
       </div>
 

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlantsByGrow, useCreatePlant } from '@/services/plantsApi';
-import { Plant, PlantStage, HealthStatus } from '@/types/plant';
+import { Plant, PlantStage, PlantStatus } from '@/types/plant';
 import { PlantCard } from '@/components/plants/PlantCard';
 import { PlantForm, PlantFormData } from '@/components/plants/PlantForm';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,7 @@ export function PlantsTab({ growId }: PlantsTabProps) {
 
   // Filter and sort states
   const [stageFilter, setStageFilter] = useState<PlantStage | 'all'>('all');
-  const [healthFilter, setHealthFilter] = useState<HealthStatus | 'all'>('all');
+  const [healthFilter, setHealthFilter] = useState<PlantStatus | 'all'>('all');
   const [sortBy, setSortBy] = useState<'tag' | 'cultivar' | 'planted' | 'stage'>('planted');
 
   // Filter and sort plants
@@ -226,7 +226,7 @@ export function PlantsTab({ growId }: PlantsTabProps) {
 
           <div className="flex-1 min-w-[200px]">
             <Label htmlFor="health-filter" className="text-sm font-medium mb-2 block">
-              Filter by Health
+              Filter by Status
             </Label>
             <Select
               value={healthFilter}
@@ -236,10 +236,10 @@ export function PlantsTab({ growId }: PlantsTabProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Health Statuses</SelectItem>
-                <SelectItem value="healthy">Healthy</SelectItem>
-                <SelectItem value="stressed">Stressed</SelectItem>
-                <SelectItem value="sick">Sick</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="harvested">Harvested</SelectItem>
+                <SelectItem value="removed">Removed</SelectItem>
                 <SelectItem value="dead">Dead</SelectItem>
               </SelectContent>
             </Select>

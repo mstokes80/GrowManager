@@ -1,9 +1,11 @@
-import '@testing-library/jest-dom';
-import { setupServer } from 'msw/node';
-import { handlers } from './mocks/handlers';
+import '@testing-library/jest-dom'
+import { setupServer } from 'msw/node'
+import { handlers } from './mocks/handlers'
+import 'fake-indexeddb/auto'
+import { beforeAll, afterEach, afterAll } from 'vitest'
 
 // Setup MSW server
-export const server = setupServer(...handlers);
+export const server = setupServer(...handlers)
 
 // Start server before all tests
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));

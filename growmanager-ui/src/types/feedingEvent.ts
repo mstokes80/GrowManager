@@ -47,8 +47,10 @@ export interface CreateFeedingEventRequest {
   ecLevel?: number;
   phLevel?: number;
   nutrientMix?: string;
+  amendments?: Amendment[];
   notes?: string;
   fedAt: string;
+  applyToAllPlants?: boolean;
 }
 
 export interface UpdateFeedingEventRequest {
@@ -57,6 +59,7 @@ export interface UpdateFeedingEventRequest {
   ecLevel?: number;
   phLevel?: number;
   nutrientMix?: string;
+  amendments?: Amendment[];
   notes?: string;
   fedAt?: string;
 }

@@ -73,6 +73,27 @@ public class PlantController {
     }
 
     /**
+     * Gets all plants for the authenticated user across all grows.
+     *
+     * @return list of all user's plants with 200 OK status
+     */
+    @GetMapping("/api/plants")
+    @Operation(summary = "List all user plants", description = "Returns all plants for the authenticated user across all grows")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Plants retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token"),
+            @ApiResponse(responseCode = "403", description = "Email not verified")
+    })
+    public ResponseEntity<List<PlantResponse>> getAllUserPlants() {
+        UUID userId = getUserIdFromAuthentication();
+        logger.info("Get all plants request for user ID: {}", userId);
+
+        List<PlantResponse> plants = plantService.getAllUserPlants(userId);
+
+        return ResponseEntity.ok(plants);
+    }
+
+    /**
      * Gets all plants for a grow.
      *
      * @param growId the grow ID

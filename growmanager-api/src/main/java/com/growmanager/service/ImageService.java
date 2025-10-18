@@ -1,6 +1,7 @@
 package com.growmanager.service;
 
 import com.growmanager.config.S3Properties;
+import jakarta.annotation.PostConstruct;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.geometry.Positions;
 import org.slf4j.Logger;
@@ -37,6 +38,21 @@ public class ImageService {
     public ImageService(S3Client s3Client, S3Properties s3Properties) {
         this.s3Client = s3Client;
         this.s3Properties = s3Properties;
+    }
+
+    /**
+     * Initialize S3 bucket on application startup.
+     * Gracefully handles failures to prevent application startup issues.
+     */
+    @PostConstruct
+    public void init() {
+        try {
+            ensureBucketExists();
+        } catch (Exception e) {
+            logger.error("Failed to initialize S3 bucket. Image uploads may fail until bucket is created manually: {}",
+                    e.getMessage());
+            logger.debug("S3 bucket initialization error details", e);
+        }
     }
 
     /**
@@ -156,27 +172,43 @@ public class ImageService {
 
     /**
      * Get public URL for an S3 object.
+     * Uses publicEndpoint if configured, otherwise falls back to endpoint.
      *
      * @param key the S3 object key
      * @return the public URL
      */
     private String getPublicUrl(String key) {
+        String baseUrl = s3Properties.getPublicEndpoint() != null
+                ? s3Properties.getPublicEndpoint()
+                : s3Properties.getEndpoint();
+
         return String.format("%s/%s/%s",
-                s3Properties.getEndpoint(),
+                baseUrl,
                 s3Properties.getBucket().getPhotos(),
                 key);
     }
 
     /**
      * Extract S3 key from public URL.
+     * Handles URLs with either endpoint or publicEndpoint.
      *
      * @param url the public URL
      * @return the S3 object key
      */
     private String extractKeyFromUrl(String url) {
         String bucketName = s3Properties.getBucket().getPhotos();
-        String prefix = String.format("%s/%s/", s3Properties.getEndpoint(), bucketName);
-        return url.replace(prefix, "");
+
+        // Try public endpoint first if configured
+        if (s3Properties.getPublicEndpoint() != null) {
+            String publicPrefix = String.format("%s/%s/", s3Properties.getPublicEndpoint(), bucketName);
+            if (url.startsWith(publicPrefix)) {
+                return url.replace(publicPrefix, "");
+            }
+        }
+
+        // Fall back to internal endpoint
+        String internalPrefix = String.format("%s/%s/", s3Properties.getEndpoint(), bucketName);
+        return url.replace(internalPrefix, "");
     }
 
     /**
@@ -194,23 +226,57 @@ public class ImageService {
 
     /**
      * Initialize S3 bucket if it doesn't exist.
-     * Should be called on application startup.
+     * Attempts to create the bucket if it's not found or if there's an error checking for it.
      */
     public void ensureBucketExists() {
         String bucketName = s3Properties.getBucket().getPhotos();
+        logger.info("Checking if S3 bucket exists: {}", bucketName);
+
         try {
             HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
                     .bucket(bucketName)
                     .build();
             s3Client.headBucket(headBucketRequest);
-            logger.info("Bucket exists: {}", bucketName);
+            logger.info("S3 bucket exists and is accessible: {}", bucketName);
         } catch (NoSuchBucketException e) {
-            logger.info("Creating bucket: {}", bucketName);
+            // Bucket doesn't exist, try to create it
+            createBucket(bucketName);
+        } catch (S3Exception e) {
+            // Other S3 error (400, 403, etc.) - might be permissions or invalid bucket name
+            // Try to create bucket anyway in case it just doesn't exist
+            logger.warn("Error checking bucket existence (status {}): {}. Attempting to create bucket.",
+                    e.statusCode(), e.getMessage());
+            try {
+                createBucket(bucketName);
+            } catch (Exception createException) {
+                logger.error("Failed to create bucket after check failed: {}", createException.getMessage());
+                throw createException;
+            }
+        }
+    }
+
+    /**
+     * Create S3 bucket.
+     *
+     * @param bucketName the name of the bucket to create
+     */
+    private void createBucket(String bucketName) {
+        logger.info("Creating S3 bucket: {}", bucketName);
+        try {
             CreateBucketRequest createBucketRequest = CreateBucketRequest.builder()
                     .bucket(bucketName)
                     .build();
             s3Client.createBucket(createBucketRequest);
-            logger.info("Bucket created: {}", bucketName);
+            logger.info("S3 bucket created successfully: {}", bucketName);
+        } catch (S3Exception e) {
+            if (e.statusCode() == 409) {
+                // Bucket already exists (race condition or ownership by another account)
+                logger.info("Bucket already exists (409 conflict): {}", bucketName);
+            } else {
+                logger.error("Failed to create bucket '{}': {} (status {})",
+                        bucketName, e.getMessage(), e.statusCode());
+                throw e;
+            }
         }
     }
 }

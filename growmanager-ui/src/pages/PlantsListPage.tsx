@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePlantsByGrow, useCreatePlant } from '@/services/plantsApi';
 import { useGrows } from '@/services/growsApi';
-import { Plant, PlantStage, HealthStatus } from '@/types/plant';
+import { Plant, PlantStage, PlantStatus } from '@/types/plant';
 import { PageHeader } from '@/components/layouts/PageHeader';
 import { PlantCard } from '@/components/plants/PlantCard';
 import { PlantForm, PlantFormData } from '@/components/plants/PlantForm';
@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
  * PlantsListPage - Display list of plants with filtering and sorting
  * Implements Task Group 6.4.1
  */
-export function PlantsListPage() {
+export default function PlantsListPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -38,7 +38,7 @@ export function PlantsListPage() {
 
   // Filter and sort states
   const [stageFilter, setStageFilter] = useState<PlantStage | 'all'>('all');
-  const [healthFilter, setHealthFilter] = useState<HealthStatus | 'all'>('all');
+  const [healthFilter, setHealthFilter] = useState<PlantStatus | 'all'>('all');
   const [sortBy, setSortBy] = useState<'tag' | 'cultivar' | 'planted' | 'stage'>('planted');
 
   // Filter and sort plants
@@ -97,7 +97,7 @@ export function PlantsListPage() {
         cultivarId: data.cultivarId || undefined,
         plantedDate: data.plantedDate,
         stage: data.stage,
-        healthStatus: data.healthStatus,
+        healthStatus: data.healthStatus, // Now uses PlantStatus directly
         notes: data.notes || undefined,
       });
 
@@ -210,9 +210,9 @@ export function PlantsListPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Health Statuses</SelectItem>
-                  <SelectItem value="healthy">Healthy</SelectItem>
-                  <SelectItem value="stressed">Stressed</SelectItem>
-                  <SelectItem value="sick">Sick</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="harvested">Harvested</SelectItem>
+                  <SelectItem value="removed">Removed</SelectItem>
                   <SelectItem value="dead">Dead</SelectItem>
                 </SelectContent>
               </Select>

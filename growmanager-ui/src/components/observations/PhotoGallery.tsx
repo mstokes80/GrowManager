@@ -125,6 +125,8 @@ export function PhotoGallery({ observations, isLoading = false }: PhotoGalleryPr
                 src={photo.thumbnailUrl}
                 alt={`Photo from ${format(new Date(photo.date), 'MMM d, yyyy')}`}
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
               {/* Date Overlay */}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">

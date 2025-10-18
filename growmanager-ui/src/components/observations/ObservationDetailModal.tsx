@@ -199,7 +199,7 @@ export function ObservationDetailModal({
                         onClick={() => openPhotoViewer(index)}
                         className="relative group cursor-pointer rounded-md overflow-hidden border border-border hover:border-primary transition-colors"
                       >
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={photo.thumbnailUrl}
                           alt={`Photo ${index + 1}`}
                           className="w-full h-32 object-cover"

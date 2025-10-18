@@ -287,7 +287,7 @@ export function FullSizePhotoViewer({
         onMouseLeave={handleMouseUp}
         style={{ cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
       >
-        <img
+        <img loading="lazy" decoding="async"
           src={currentPhoto.url}
           alt={currentPhoto.caption || `Photo ${currentIndex + 1}`}
           className="absolute top-1/2 left-1/2 max-w-none select-none"

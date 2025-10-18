@@ -35,14 +35,14 @@ export function PlantCard({ plant, onClick, onCopy }: PlantCardProps) {
 
   const getHealthStatusColor = (
     status: Plant['healthStatus']
-  ): 'default' | 'success' | 'warning' | 'destructive' => {
+  ): 'default' | 'success' | 'warning' | 'destructive' | 'secondary' => {
     switch (status) {
-      case 'healthy':
+      case 'active':
         return 'success';
-      case 'stressed':
+      case 'harvested':
+        return 'secondary';
+      case 'removed':
         return 'warning';
-      case 'sick':
-        return 'destructive';
       case 'dead':
         return 'destructive';
       default:
@@ -52,12 +52,12 @@ export function PlantCard({ plant, onClick, onCopy }: PlantCardProps) {
 
   const getHealthIcon = (status: Plant['healthStatus']) => {
     switch (status) {
-      case 'healthy':
+      case 'active':
         return <Heart className="h-4 w-4" />;
-      case 'stressed':
-        return <AlertTriangle className="h-4 w-4" />;
-      case 'sick':
+      case 'harvested':
         return <Activity className="h-4 w-4" />;
+      case 'removed':
+        return <AlertTriangle className="h-4 w-4" />;
       case 'dead':
         return <AlertTriangle className="h-4 w-4" />;
       default:

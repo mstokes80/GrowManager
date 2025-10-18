@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
  * CultivarsListPage - Display list of user's cultivars with search and create functionality
  * Implements Task Group 5.1.3
  */
-export function CultivarsListPage() {
+export default function CultivarsListPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');

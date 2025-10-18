@@ -44,6 +44,9 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
+    @Autowired
+    private SecurityHeadersFilter securityHeadersFilter;
+
     @Value("${cors.allowed-origins:http://localhost:5173}")
     private String allowedOrigins;
 
@@ -113,7 +116,10 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
                 // Add email verification filter after JWT filter
-                .addFilterAfter(emailVerificationFilter, JwtAuthenticationFilter.class);
+                .addFilterAfter(emailVerificationFilter, JwtAuthenticationFilter.class)
+
+                // Add security headers filter at the end of the chain
+                .addFilterAfter(securityHeadersFilter, EmailVerificationFilter.class);
 
         return http.build();
     }

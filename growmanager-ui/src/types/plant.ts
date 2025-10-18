@@ -4,7 +4,7 @@
  */
 
 export type PlantStage = 'seedling' | 'vegetative' | 'flowering' | 'harvested';
-export type HealthStatus = 'healthy' | 'stressed' | 'sick' | 'dead';
+export type PlantStatus = 'active' | 'harvested' | 'removed' | 'dead';
 
 export interface Plant {
   id: string;
@@ -13,7 +13,7 @@ export interface Plant {
   plantTag: string;
   plantedDate: string;
   stage: PlantStage;
-  healthStatus: HealthStatus;
+  healthStatus: PlantStatus; // Backend uses PlantStatus (active/harvested/removed/dead)
   notes?: string;
   harvestedDate?: string;
   createdAt: string;
@@ -29,7 +29,7 @@ export interface CreatePlantRequest {
   plantTag: string;
   plantedDate: string;
   stage: PlantStage;
-  healthStatus: HealthStatus;
+  healthStatus: PlantStatus; // Backend expects PlantStatus (active/harvested/removed/dead)
   notes?: string;
 }
 
@@ -37,7 +37,7 @@ export interface UpdatePlantRequest {
   cultivarId?: string;
   plantTag?: string;
   stage?: PlantStage;
-  healthStatus?: HealthStatus;
+  healthStatus?: PlantStatus; // Backend expects PlantStatus (active/harvested/removed/dead)
   notes?: string;
   harvestedDate?: string;
 }

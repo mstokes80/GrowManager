@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
  * GrowsListPage - Display list of user's grows (active and archived)
  * Implements Task Group 5.2.3
  */
-export function GrowsListPage() {
+export default function GrowsListPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);

@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react';
 /**
  * PlantsPage - List of plants in current/selected grow
  */
-export function PlantsPage() {
+export default function PlantsPage() {
   return (
     <div>
       <PageHeader

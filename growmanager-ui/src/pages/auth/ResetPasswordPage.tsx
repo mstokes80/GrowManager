@@ -35,7 +35,7 @@ type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
  * ResetPasswordPage - Reset password with token from email
  * Implements Task Group 4.3.6
  */
-export function ResetPasswordPage() {
+export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
