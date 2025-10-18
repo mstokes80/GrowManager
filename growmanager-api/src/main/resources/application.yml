@@ -21,6 +21,19 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 100MB
+      enabled: true
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      adjust-dates-to-context-time-zone: false
+    time-zone: UTC
+
 server:
   port: ${SERVER_PORT:8080}
   error:
@@ -35,6 +48,16 @@ logging:
     org.springframework.web: INFO
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
 
 ---
 # Development Profile
@@ -69,12 +92,34 @@ spring:
 
   security:
     jwt:
-      secret: ${JWT_SECRET:dev-secret-key-change-in-production-minimum-256-bits}
-      expiration: 86400000 # 24 hours
+      secret: ${JWT_SECRET:dev-secret-key-change-in-production-minimum-256-bits-long-for-security}
+      access-token-expiration: 900000 # 15 minutes
+      refresh-token-expiration: 604800000 # 7 days
+      refresh-token-expiration-remember-me: 2592000000 # 30 days
+
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+# Application Configuration
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  email:
+    from: ${EMAIL_FROM:noreply@growmanager.com}
+    from-name: ${EMAIL_FROM_NAME:GrowManager}
 
 # MinIO/S3 Configuration
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  public-endpoint: ${MINIO_PUBLIC_ENDPOINT:http://localhost:9000}
   access-key: ${MINIO_ACCESS_KEY:minioadmin}
   secret-key: ${MINIO_SECRET_KEY:minioadmin}
   bucket:
@@ -116,11 +161,24 @@ spring:
 
   security:
     jwt:
-      secret: test-secret-key-for-testing-purposes-only-minimum-256-bits
-      expiration: 3600000 # 1 hour
+      secret: test-secret-key-for-testing-purposes-only-minimum-256-bits-long-for-security
+      access-token-expiration: 900000 # 15 minutes
+      refresh-token-expiration: 604800000 # 7 days
+      refresh-token-expiration-remember-me: 2592000000 # 30 days
+
+  mail:
+    host: localhost
+    port: 1025
+
+app:
+  frontend-url: http://localhost:5173
+  email:
+    from: noreply@growmanager.com
+    from-name: GrowManager
 
 minio:
   endpoint: http://localhost:9000
+  public-endpoint: http://localhost:9000
   access-key: minioadmin
   secret-key: minioadmin
   bucket:
@@ -156,15 +214,41 @@ spring:
       port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD}
       timeout: 60000
-      ssl: true
+      # SSL disabled - using local Redis without TLS
+      # ssl:
+      #   enabled: false
 
   security:
     jwt:
       secret: ${JWT_SECRET}
-      expiration: 86400000 # 24 hours
+      access-token-expiration: 900000 # 15 minutes
+      refresh-token-expiration: 604800000 # 7 days
+      refresh-token-expiration-remember-me: 2592000000 # 30 days
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: ${MAIL_HOST}
+
+app:
+  frontend-url: ${FRONTEND_URL}
+  email:
+    from: ${EMAIL_FROM}
+    from-name: ${EMAIL_FROM_NAME:GrowManager}
 
 minio:
   endpoint: ${MINIO_ENDPOINT}
+  public-endpoint: ${MINIO_PUBLIC_ENDPOINT}
   access-key: ${MINIO_ACCESS_KEY}
   secret-key: ${MINIO_SECRET_KEY}
   bucket:

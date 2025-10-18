@@ -1,0 +1,32 @@
+version: 1.0.0
+phase: "PHASE 10: Testing, Optimization & Polish"
+created: 2025-10-16
+
+task_assignments:
+  - task_group: "Task Group 10.1: End-to-End Testing"
+    assigned_subagent: "testing-engineer"
+    dependencies: "All previous task groups"
+    estimated_effort: "2 days"
+
+  - task_group: "Task Group 10.2: Performance Optimization"
+    assigned_subagent: "ui-designer"
+    dependencies: "Task Group 10.1"
+    estimated_effort: "1.5 days"
+    note: "UI designer handles frontend optimization"
+
+  - task_group: "Task Group 10.3: Accessibility & UX Polish"
+    assigned_subagent: "ui-designer"
+    dependencies: "Task Group 10.2"
+    estimated_effort: "1.5 days"
+
+  - task_group: "Task Group 10.4: Security Audit & Hardening"
+    assigned_subagent: "backend-verifier"
+    dependencies: "Task Group 10.3"
+    estimated_effort: "1 day"
+    note: "Backend verifier handles security verification"
+
+notes: |
+  Mapped to available Claude Code agent types:
+  - testing-engineer (available)
+  - ui-designer (available, handles both frontend optimization and UX)
+  - backend-verifier (available, handles security verification)

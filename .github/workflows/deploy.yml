@@ -1,0 +1,407 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/workflows/backend-ci.yml'
+      - '.github/workflows/frontend-ci.yml'
+      - '.github/workflows/sonarcloud.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE_NAME: ${{ github.repository }}/backend
+  FRONTEND_IMAGE_NAME: ${{ github.repository }}/frontend
+
+jobs:
+  # ============================================================
+  # Build Backend Docker Image
+  # ============================================================
+  build-backend:
+    name: Build Backend Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      backend-version: ${{ steps.meta.outputs.version }}
+      backend-image: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run backend tests
+        working-directory: ./growmanager-api
+        run: mvn clean verify
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./growmanager-api
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  # ============================================================
+  # Build Frontend Docker Image
+  # ============================================================
+  build-frontend:
+    name: Build Frontend Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      frontend-version: ${{ steps.meta.outputs.version }}
+      frontend-image: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: growmanager-ui/package-lock.json
+
+      - name: Run frontend tests
+        working-directory: ./growmanager-ui
+        run: |
+          npm ci
+          npm run lint
+          npm run type-check
+          npm run test:coverage
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./growmanager-ui
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  # ============================================================
+  # Deploy to Staging (Optional)
+  # ============================================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    if: github.event_name == 'push' || github.event.inputs.environment == 'staging'
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+
+      - name: Deploy to staging server
+        env:
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+          BACKEND_IMAGE: ${{ needs.build-backend.outputs.backend-image }}
+          FRONTEND_IMAGE: ${{ needs.build-frontend.outputs.frontend-image }}
+        run: |
+          ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST << 'EOF'
+            cd ${{ vars.STAGING_DEPLOY_PATH }}
+
+            # Pull latest images
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+            docker compose -f docker-compose.prod.yml pull
+
+            # Deploy with new images
+            docker compose -f docker-compose.prod.yml up -d --force-recreate
+
+            # Wait for services to be healthy
+            sleep 10
+            docker compose -f docker-compose.prod.yml ps
+          EOF
+
+      - name: Run smoke tests
+        env:
+          STAGING_URL: ${{ vars.STAGING_URL }}
+        run: |
+          # Wait for deployment to be ready
+          sleep 30
+
+          # Health check for backend
+          curl -f $STAGING_URL/api/actuator/health || exit 1
+
+          # Health check for frontend
+          curl -f $STAGING_URL/health || exit 1
+
+          echo "✅ Staging deployment successful and healthy"
+
+      - name: Cleanup SSH
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
+
+  # ============================================================
+  # Deploy to Production (Manual Approval Required)
+  # ============================================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend, deploy-staging]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+
+      - name: Create backup before deployment
+        env:
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST << 'EOF'
+            cd ${{ vars.PRODUCTION_DEPLOY_PATH }}
+
+            # Backup database
+            BACKUP_DIR="backups/$(date +%Y%m%d_%H%M%S)"
+            mkdir -p $BACKUP_DIR
+            docker compose -f docker-compose.prod.yml exec -T postgres pg_dump -U $DB_USERNAME $DB_NAME > $BACKUP_DIR/database.sql
+
+            # Keep only last 7 days of backups
+            find backups/ -type d -mtime +7 -exec rm -rf {} +
+
+            echo "✅ Backup created at $BACKUP_DIR"
+          EOF
+
+      - name: Deploy to production server
+        env:
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          BACKEND_IMAGE: ${{ needs.build-backend.outputs.backend-image }}
+          FRONTEND_IMAGE: ${{ needs.build-frontend.outputs.frontend-image }}
+        run: |
+          ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST << 'EOF'
+            cd ${{ vars.PRODUCTION_DEPLOY_PATH }}
+
+            # Pull latest images
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+            docker compose -f docker-compose.prod.yml pull
+
+            # Deploy with zero-downtime strategy
+            docker compose -f docker-compose.prod.yml up -d --force-recreate --no-deps backend
+            sleep 30  # Wait for backend to be healthy
+
+            docker compose -f docker-compose.prod.yml up -d --force-recreate --no-deps frontend
+            sleep 10  # Wait for frontend to be healthy
+
+            # Verify all services are running
+            docker compose -f docker-compose.prod.yml ps
+          EOF
+
+      - name: Run production smoke tests
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+        run: |
+          # Wait for deployment to be ready
+          sleep 30
+
+          # Health check for backend
+          curl -f $PRODUCTION_URL/api/actuator/health || exit 1
+
+          # Health check for frontend
+          curl -f $PRODUCTION_URL/health || exit 1
+
+          # Test login endpoint
+          curl -f -X POST $PRODUCTION_URL/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"test@example.com","password":"wrong"}' || true
+
+          echo "✅ Production deployment successful and healthy"
+
+      - name: Cleanup old Docker images
+        env:
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST << 'EOF'
+            # Remove dangling images
+            docker image prune -f
+
+            # Remove old images (keep last 3)
+            docker images | grep growmanager | tail -n +4 | awk '{print $3}' | xargs -r docker rmi || true
+          EOF
+
+      - name: Cleanup SSH
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
+
+      - name: Notify deployment success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'success',
+              context: 'deployment/production',
+              description: 'Production deployment successful'
+            })
+
+  # ============================================================
+  # Rollback (Manual Trigger Only)
+  # ============================================================
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment != ''
+    environment:
+      name: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ github.event.inputs.environment == 'production' && secrets.PRODUCTION_SSH_PRIVATE_KEY || secrets.STAGING_SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ github.event.inputs.environment == 'production' && secrets.PRODUCTION_SSH_HOST || secrets.STAGING_SSH_HOST }}
+          SSH_USER: ${{ github.event.inputs.environment == 'production' && secrets.PRODUCTION_SSH_USER || secrets.STAGING_SSH_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+
+      - name: Rollback to previous version
+        env:
+          SSH_HOST: ${{ github.event.inputs.environment == 'production' && secrets.PRODUCTION_SSH_HOST || secrets.STAGING_SSH_HOST }}
+          SSH_USER: ${{ github.event.inputs.environment == 'production' && secrets.PRODUCTION_SSH_USER || secrets.STAGING_SSH_USER }}
+          DEPLOY_PATH: ${{ github.event.inputs.environment == 'production' && vars.PRODUCTION_DEPLOY_PATH || vars.STAGING_DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key $SSH_USER@$SSH_HOST << 'EOF'
+            cd $DEPLOY_PATH
+
+            # Restore from latest backup
+            LATEST_BACKUP=$(ls -t backups/ | head -1)
+            if [ -z "$LATEST_BACKUP" ]; then
+              echo "❌ No backup found for rollback"
+              exit 1
+            fi
+
+            echo "Rolling back to backup: $LATEST_BACKUP"
+
+            # Stop services
+            docker compose -f docker-compose.prod.yml down
+
+            # Restore database
+            docker compose -f docker-compose.prod.yml up -d postgres
+            sleep 10
+            cat backups/$LATEST_BACKUP/database.sql | docker compose -f docker-compose.prod.yml exec -T postgres psql -U $DB_USERNAME $DB_NAME
+
+            # Start all services
+            docker compose -f docker-compose.prod.yml up -d
+
+            echo "✅ Rollback completed"
+          EOF
+
+      - name: Cleanup SSH
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
