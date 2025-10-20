@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +16,13 @@ import {
 } from '@/components/ui/select';
 import { AlertCircle, Droplets, Leaf, Beaker, Plus, X } from 'lucide-react';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import {
+  type VolumeUnit,
+  getVolumeConversion,
+  validateVolume,
+  toMilliliters,
+} from '@/utils/volumeUtils';
 
 // Amendment validation schema
 const amendmentSchema = z.object({
@@ -45,10 +53,10 @@ const feedingSchema = z.object({
   feedingType: z.enum(['watering', 'nutrients', 'foliar'], {
     errorMap: () => ({ message: 'Please select a feeding type' }),
   }),
-  amountMl: z
+  volumeInput: z
     .number({ invalid_type_error: 'Amount must be a number' })
     .positive('Amount must be positive')
-    .max(100000, 'Amount must be less than 100,000 ml'),
+    .optional(),
   ecLevel: z
     .union([
       z.number().min(0, 'EC must be non-negative').max(10, 'EC must be less than 10'),
@@ -76,7 +84,24 @@ const feedingSchema = z.object({
   applyToAllPlants: z.boolean().optional(),
 });
 
-export type LogFeedingFormData = z.infer<typeof feedingSchema>;
+type FormData = z.infer<typeof feedingSchema>;
+
+// Output type for the form submission (always in ml)
+export interface LogFeedingFormData {
+  feedingType: 'watering' | 'nutrients' | 'foliar';
+  amountMl: number;
+  ecLevel?: number | null;
+  phLevel?: number | null;
+  nutrientMix?: string;
+  amendments?: Array<{
+    name: string;
+    amount: number;
+    unit: string;
+  }>;
+  notes?: string;
+  fedAt: string;
+  applyToAllPlants?: boolean;
+}
 
 interface LogFeedingFormProps {
   plantId: string;
@@ -95,6 +120,8 @@ export function LogFeedingForm({
   onCancel,
   isSubmitting = false,
 }: LogFeedingFormProps) {
+  const [volumeUnit, setVolumeUnit] = useState<VolumeUnit>('milliliters');
+
   const {
     register,
     handleSubmit,
@@ -102,11 +129,11 @@ export function LogFeedingForm({
     watch,
     control,
     formState: { errors },
-  } = useForm<LogFeedingFormData>({
+  } = useForm<FormData>({
     resolver: zodResolver(feedingSchema),
     defaultValues: {
       feedingType: 'watering',
-      amountMl: undefined,
+      volumeInput: undefined,
       ecLevel: null,
       phLevel: null,
       nutrientMix: '',
@@ -124,10 +151,35 @@ export function LogFeedingForm({
 
   const selectedFeedingType = watch('feedingType');
   const applyToAllPlants = watch('applyToAllPlants');
+  const volumeInput = watch('volumeInput');
 
+  const handleFormSubmit = (data: FormData) => {
+    // Convert volume to milliliters if needed
+    const volumeMl = data.volumeInput !== undefined
+      ? toMilliliters(data.volumeInput, volumeUnit)
+      : 0;
+
+    // Transform the data to match the expected output type
+    const submitData: LogFeedingFormData = {
+      feedingType: data.feedingType,
+      amountMl: volumeMl,
+      ecLevel: data.ecLevel,
+      phLevel: data.phLevel,
+      nutrientMix: data.nutrientMix,
+      amendments: data.amendments,
+      notes: data.notes,
+      fedAt: data.fedAt,
+      applyToAllPlants: data.applyToAllPlants,
+    };
+
+    onSubmit(submitData);
+  };
+
+  const volumeError = validateVolume(volumeInput, volumeUnit);
+  const conversionText = getVolumeConversion(volumeInput, volumeUnit);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Feeding Type Field */}
       <div className="space-y-2">
         <Label htmlFor="feedingType">
@@ -169,24 +221,62 @@ export function LogFeedingForm({
         )}
       </div>
 
-      {/* Amount Field */}
+      {/* Amount Field with Unit Toggle */}
       <div className="space-y-2">
-        <Label htmlFor="amountMl">
-          Amount (ml) <span className="text-destructive">*</span>
-        </Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="volumeInput">
+            Amount <span className="text-destructive">*</span>
+          </Label>
+          <div className="flex gap-1 border rounded-md p-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className={cn(
+                'h-7 px-3 text-xs',
+                volumeUnit === 'milliliters' && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+              )}
+              onClick={() => setVolumeUnit('milliliters')}
+            >
+              ml
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className={cn(
+                'h-7 px-3 text-xs',
+                volumeUnit === 'gallons' && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+              )}
+              onClick={() => setVolumeUnit('gallons')}
+            >
+              gal
+            </Button>
+          </div>
+        </div>
         <Input
-          id="amountMl"
+          id="volumeInput"
           type="number"
-          step="0.01"
-          placeholder="e.g., 500"
-          {...register('amountMl', { valueAsNumber: true })}
-          aria-invalid={!!errors.amountMl}
-          aria-describedby={errors.amountMl ? 'amountMl-error' : undefined}
+          step={volumeUnit === 'milliliters' ? '1' : '0.01'}
+          placeholder={volumeUnit === 'milliliters' ? 'e.g., 500' : 'e.g., 0.13'}
+          {...register('volumeInput', { valueAsNumber: true })}
+          aria-invalid={!!volumeError}
+          aria-describedby={volumeError ? 'volume-error' : undefined}
         />
-        {errors.amountMl && (
-          <p id="amountMl-error" className="text-sm text-destructive flex items-center gap-1">
+        {volumeError && (
+          <p id="volume-error" className="text-sm text-destructive flex items-center gap-1">
             <AlertCircle className="h-4 w-4" />
-            {errors.amountMl.message}
+            {volumeError}
+          </p>
+        )}
+        {conversionText && !volumeError && (
+          <p className="text-xs text-muted-foreground">
+            ≈ {conversionText}
+          </p>
+        )}
+        {!volumeInput && (
+          <p className="text-xs text-muted-foreground">
+            Enter the water or solution volume
           </p>
         )}
       </div>

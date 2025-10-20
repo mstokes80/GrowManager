@@ -29,3 +29,23 @@ export interface CreateEnvironmentalSnapshotRequest {
   lightIntensity?: number;
   notes?: string;
 }
+
+export interface EnvironmentalImportResponse {
+  importedCount: number;
+  skippedCount: number;
+  totalRecords: number;
+  errors: string[];
+  source: string;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}

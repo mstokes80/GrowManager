@@ -66,6 +66,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import type { Observation } from '@/types/observation';
+import type { Amendment } from '@/types/feedingEvent';
 import { parseLocalDate } from '@/utils/dateUtils';
 
 /**
@@ -202,7 +203,7 @@ export default function PlantDetailPage() {
         ecLevel: data.ecLevel || undefined,
         phLevel: data.phLevel || undefined,
         nutrientMix: data.nutrientMix || undefined,
-        amendments: data.amendments || undefined,
+        amendments: data.amendments as Amendment[] | undefined,
         notes: data.notes || undefined,
         fedAt: data.fedAt,
         applyToAllPlants: data.applyToAllPlants,

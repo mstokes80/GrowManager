@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
-  useEnvironmentalSnapshotsByGrow,
+  useInfiniteEnvironmentalSnapshots,
   useCreateSnapshotForGrow,
   useDeleteSnapshot,
+  useImportEnvironmentalCSV,
 } from '@/services/environmentalSnapshotsApi';
 import { EnvironmentalSnapshotCard } from './EnvironmentalSnapshotCard';
 import {
@@ -11,9 +12,10 @@ import {
 } from './EnvironmentalSnapshotForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Loader2, AlertCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Plus, Loader2, AlertCircle, Upload, FileUp, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { EnvironmentalImportResponse } from '@/types/environmentalSnapshot';
 
 interface EnvironmentTabProps {
   growId: string;
@@ -21,15 +23,53 @@ interface EnvironmentTabProps {
 
 /**
  * EnvironmentTab - Display and manage environmental snapshots for a grow
- * Used in the GrowDetailPage tabs
+ * Uses infinite scrolling for performance with large datasets
  */
 export function EnvironmentTab({ growId }: EnvironmentTabProps) {
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importResult, setImportResult] = useState<EnvironmentalImportResponse | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const { data: snapshots, isLoading, error, refetch } = useEnvironmentalSnapshotsByGrow(growId);
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useInfiniteEnvironmentalSnapshots(growId, 30); // Load 30 items per page
+
   const createSnapshotMutation = useCreateSnapshotForGrow();
   const deleteSnapshotMutation = useDeleteSnapshot();
+  const importCSVMutation = useImportEnvironmentalCSV();
+
+  // Flatten all pages into a single array of snapshots
+  const snapshots = data?.pages.flatMap((page) => page.content) ?? [];
+  const totalElements = data?.pages[0]?.totalElements ?? 0;
+
+  // Infinite scroll: Load more when the sentinel element is visible
+  useEffect(() => {
+    if (!loadMoreRef.current || !hasNextPage || isFetchingNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const handleCreateSnapshot = async (data: EnvironmentalSnapshotFormData) => {
     try {
@@ -87,6 +127,57 @@ export function EnvironmentTab({ growId }: EnvironmentTabProps) {
     }
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setImportResult(null);
+    }
+  };
+
+  const handleImportCSV = async () => {
+    if (!selectedFile) {
+      toast({
+        variant: 'destructive',
+        title: 'No file selected',
+        description: 'Please select a CSV file to import.',
+      });
+      return;
+    }
+
+    try {
+      const result = await importCSVMutation.mutateAsync({
+        growId,
+        file: selectedFile,
+      });
+
+      setImportResult(result);
+
+      toast({
+        title: 'Import completed',
+        description: `Successfully imported ${result.importedCount} of ${result.totalRecords} records.`,
+      });
+    } catch (error: any) {
+      console.error('Failed to import CSV:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred while importing the CSV file.';
+
+      toast({
+        variant: 'destructive',
+        title: 'Import failed',
+        description: errorMessage,
+      });
+    }
+  };
+
+  const handleCloseImportDialog = () => {
+    setIsImportDialogOpen(false);
+    setSelectedFile(null);
+    setImportResult(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   // Loading State
   if (isLoading) {
     return (
@@ -130,12 +221,18 @@ export function EnvironmentTab({ growId }: EnvironmentTabProps) {
               </div>
               <h3 className="text-xl font-semibold">No environmental data yet</h3>
               <p className="text-sm text-muted-foreground text-center max-w-md">
-                Start tracking environmental conditions by recording your first snapshot.
+                Start tracking environmental conditions by recording your first snapshot or import data from a CSV file.
               </p>
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Record First Snapshot
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import CSV
+                </Button>
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Record First Snapshot
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -153,6 +250,122 @@ export function EnvironmentTab({ growId }: EnvironmentTabProps) {
             />
           </DialogContent>
         </Dialog>
+
+        {/* Import CSV Dialog */}
+        <Dialog open={isImportDialogOpen} onOpenChange={handleCloseImportDialog}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Import Environmental Data</DialogTitle>
+              <DialogDescription>
+                Import environmental data from an AC Infinity CSV file. The file should contain columns for Time, Temperature, Relative Humidity, and VPD.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {/* File Upload Section */}
+              {!importResult && (
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      id="csv-file-input"
+                    />
+                    <label
+                      htmlFor="csv-file-input"
+                      className="flex flex-col items-center justify-center cursor-pointer"
+                    >
+                      <FileUp className="h-12 w-12 text-muted-foreground mb-2" />
+                      <p className="text-sm font-medium mb-1">
+                        {selectedFile ? selectedFile.name : 'Click to select a CSV file'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Supported format: AC Infinity CSV
+                      </p>
+                    </label>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={handleCloseImportDialog}>
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleImportCSV}
+                      disabled={!selectedFile || importCSVMutation.isPending}
+                    >
+                      {importCSVMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Importing...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Import
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Import Results Section */}
+              {importResult && (
+                <div className="space-y-4">
+                  <div className="bg-muted rounded-lg p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <h4 className="font-medium">Import Summary</h4>
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Total Records:</span>
+                        <span className="font-medium">{importResult.totalRecords}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Successfully Imported:</span>
+                        <span className="font-medium text-green-600">{importResult.importedCount}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Skipped:</span>
+                        <span className="font-medium text-orange-600">{importResult.skippedCount}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Source:</span>
+                        <span className="font-medium">{importResult.source}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Error List */}
+                  {importResult.errors && importResult.errors.length > 0 && (
+                    <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <XCircle className="h-5 w-5 text-destructive" />
+                        <h4 className="font-medium text-destructive">Errors</h4>
+                      </div>
+                      <ul className="space-y-1 text-sm max-h-48 overflow-y-auto">
+                        {importResult.errors.map((error, index) => (
+                          <li key={index} className="text-destructive/90">
+                            {error}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end">
+                    <Button onClick={handleCloseImportDialog}>Close</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </>
     );
   }
@@ -166,10 +379,16 @@ export function EnvironmentTab({ growId }: EnvironmentTabProps) {
           <p className="text-sm text-muted-foreground">
             {snapshots.length} {snapshots.length === 1 ? 'snapshot' : 'snapshots'} recorded
           </p>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Record Snapshot
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Import CSV
+            </Button>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Record Snapshot
+            </Button>
+          </div>
         </div>
 
         {/* Info Banner */}
@@ -191,6 +410,29 @@ export function EnvironmentTab({ growId }: EnvironmentTabProps) {
             />
           ))}
         </div>
+
+        {/* Load More Sentinel & Loading Indicator */}
+        {hasNextPage && (
+          <div ref={loadMoreRef} className="flex justify-center py-8">
+            {isFetchingNextPage ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Loading more...</span>
+              </div>
+            ) : (
+              <Button variant="outline" onClick={() => fetchNextPage()}>
+                Load More
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* End of List Message */}
+        {!hasNextPage && snapshots.length > 0 && (
+          <div className="text-center py-8 text-sm text-muted-foreground">
+            Showing all {totalElements} {totalElements === 1 ? 'snapshot' : 'snapshots'}
+          </div>
+        )}
       </div>
 
       {/* Create Snapshot Dialog */}
@@ -204,6 +446,122 @@ export function EnvironmentTab({ growId }: EnvironmentTabProps) {
             onCancel={() => setIsCreateDialogOpen(false)}
             isSubmitting={createSnapshotMutation.isPending}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Import CSV Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={handleCloseImportDialog}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Import Environmental Data</DialogTitle>
+            <DialogDescription>
+              Import environmental data from an AC Infinity CSV file. The file should contain columns for Time, Temperature, Relative Humidity, and VPD.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* File Upload Section */}
+            {!importResult && (
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="csv-file-input"
+                  />
+                  <label
+                    htmlFor="csv-file-input"
+                    className="flex flex-col items-center justify-center cursor-pointer"
+                  >
+                    <FileUp className="h-12 w-12 text-muted-foreground mb-2" />
+                    <p className="text-sm font-medium mb-1">
+                      {selectedFile ? selectedFile.name : 'Click to select a CSV file'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Supported format: AC Infinity CSV
+                    </p>
+                  </label>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={handleCloseImportDialog}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleImportCSV}
+                    disabled={!selectedFile || importCSVMutation.isPending}
+                  >
+                    {importCSVMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Import
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Import Results Section */}
+            {importResult && (
+              <div className="space-y-4">
+                <div className="bg-muted rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <h4 className="font-medium">Import Summary</h4>
+                  </div>
+
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total Records:</span>
+                      <span className="font-medium">{importResult.totalRecords}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Successfully Imported:</span>
+                      <span className="font-medium text-green-600">{importResult.importedCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Skipped:</span>
+                      <span className="font-medium text-orange-600">{importResult.skippedCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Source:</span>
+                      <span className="font-medium">{importResult.source}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Error List */}
+                {importResult.errors && importResult.errors.length > 0 && (
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <XCircle className="h-5 w-5 text-destructive" />
+                      <h4 className="font-medium text-destructive">Errors</h4>
+                    </div>
+                    <ul className="space-y-1 text-sm max-h-48 overflow-y-auto">
+                      {importResult.errors.map((error, index) => (
+                        <li key={index} className="text-destructive/90">
+                          {error}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="flex justify-end">
+                  <Button onClick={handleCloseImportDialog}>Close</Button>
+                </div>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>

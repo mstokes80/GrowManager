@@ -2,6 +2,8 @@ package com.growmanager.repository;
 
 import com.growmanager.entity.EnvironmentalSnapshot;
 import com.growmanager.entity.EnvironmentalSnapshot.SnapshotSource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,6 +30,26 @@ public interface EnvironmentalSnapshotRepository extends JpaRepository<Environme
     List<EnvironmentalSnapshot> findByGrowId(@Param("growId") UUID growId);
 
     /**
+     * Finds environmental snapshots for a specific grow with pagination support.
+     *
+     * @param growId the ID of the grow
+     * @param pageable the pagination information
+     * @return a page of environmental snapshots for the grow
+     */
+    @Query("SELECT e FROM EnvironmentalSnapshot e WHERE e.grow.id = :growId")
+    Page<EnvironmentalSnapshot> findByGrowId(@Param("growId") UUID growId, Pageable pageable);
+
+    /**
+     * Finds all environmental snapshots for a specific grow ordered by timestamp descending.
+     * Optimized for analytics queries using the new composite indexes.
+     *
+     * @param growId the ID of the grow
+     * @return a list of environmental snapshots for the grow
+     */
+    @Query("SELECT e FROM EnvironmentalSnapshot e WHERE e.grow.id = :growId ORDER BY e.timestamp DESC")
+    List<EnvironmentalSnapshot> findByGrowIdOrderByTimestampDesc(@Param("growId") UUID growId);
+
+    /**
      * Finds environmental snapshots for a specific plant.
      *
      * @param plantId the ID of the plant
@@ -35,6 +57,18 @@ public interface EnvironmentalSnapshotRepository extends JpaRepository<Environme
      */
     @Query("SELECT e FROM EnvironmentalSnapshot e WHERE e.plant.id = :plantId ORDER BY e.timestamp DESC")
     List<EnvironmentalSnapshot> findByPlantId(@Param("plantId") UUID plantId);
+
+    /**
+     * Finds environmental snapshots for a grow within a time range.
+     * Optimized for analytics queries using timestamp indexes.
+     *
+     * @param growId the ID of the grow
+     * @param startTime the range start time
+     * @param endTime the range end time
+     * @return a list of environmental snapshots within the time range
+     */
+    @Query("SELECT e FROM EnvironmentalSnapshot e WHERE e.grow.id = :growId AND e.timestamp >= :startTime AND e.timestamp <= :endTime ORDER BY e.timestamp DESC")
+    List<EnvironmentalSnapshot> findByGrowIdAndTimestampBetween(@Param("growId") UUID growId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
 
     /**
      * Finds environmental snapshots for a grow within a time range.

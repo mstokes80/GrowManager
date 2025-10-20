@@ -22,7 +22,7 @@ import {
 import { GrowForm, GrowFormData } from '@/components/grows/GrowForm';
 import { DeleteGrowDialog } from '@/components/grows/DeleteGrowDialog';
 import { GrowTabs } from '@/components/grows/GrowTabs';
-import { Edit, MoreVertical, Archive, ArchiveRestore, Trash2, Loader2, AlertCircle, Sprout } from 'lucide-react';
+import { Edit, MoreVertical, Archive, ArchiveRestore, Trash2, Loader2, AlertCircle, Sprout, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { parseLocalDate } from '@/utils/dateUtils';
@@ -392,6 +392,11 @@ export default function GrowDetailPage() {
         showBackButton
         actions={
           <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => navigate(`/grows/${id}/timeline`)}>
+              <Calendar className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">View Timeline</span>
+              <span className="sm:hidden">Timeline</span>
+            </Button>
             <Button size="sm" variant="outline" onClick={() => setIsEditDialogOpen(true)}>
               <Edit className="h-4 w-4 mr-2" />
               Edit

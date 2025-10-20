@@ -27,6 +27,12 @@ const CultivarDetailPage = lazy(() => import('@/pages/CultivarDetailPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
 const HarvestDetailPage = lazy(() => import('@/pages/HarvestDetailPage'));
+const AnalyticsLandingPage = lazy(() => import('@/pages/AnalyticsLandingPage'));
+const EnvironmentalAnalyticsPage = lazy(() => import('@/pages/EnvironmentalAnalyticsPage'));
+const FeedingAnalyticsPage = lazy(() => import('@/pages/FeedingAnalyticsPage'));
+const YieldAnalyticsPage = lazy(() => import('@/pages/YieldAnalyticsPage'));
+const CultivarComparisonPage = lazy(() => import('@/pages/CultivarComparisonPage'));
+const GrowTimelinePage = lazy(() => import('@/pages/GrowTimelinePage'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 
 function App() {
@@ -71,12 +77,18 @@ function App() {
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/grows" element={<GrowsListPage />} />
                 <Route path="/grows/:id" element={<GrowDetailPage />} />
+                <Route path="/grows/:growId/timeline" element={<GrowTimelinePage />} />
                 {/* Redirect /plants list to /grows - plants are now displayed in grow tabs */}
                 <Route path="/plants" element={<Navigate to="/grows" replace />} />
                 <Route path="/plants/:id" element={<PlantDetailPage />} />
                 <Route path="/cultivars" element={<CultivarsListPage />} />
                 <Route path="/cultivars/:id" element={<CultivarDetailPage />} />
                 <Route path="/harvests/:id" element={<HarvestDetailPage />} />
+                <Route path="/analytics" element={<AnalyticsLandingPage />} />
+                <Route path="/analytics/environmental" element={<EnvironmentalAnalyticsPage />} />
+                <Route path="/analytics/feeding/:growId?" element={<FeedingAnalyticsPage />} />
+                <Route path="/analytics/yield" element={<YieldAnalyticsPage />} />
+                <Route path="/analytics/comparison" element={<CultivarComparisonPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>

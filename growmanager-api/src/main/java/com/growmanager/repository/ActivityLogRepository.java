@@ -39,6 +39,18 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, UUID> 
 
     /**
      * Finds activity logs for a plant within a time range.
+     * Optimized for analytics queries using timestamp indexes.
+     *
+     * @param plantId the ID of the plant
+     * @param startTime the range start time
+     * @param endTime the range end time
+     * @return a list of activity logs within the time range
+     */
+    @Query("SELECT a FROM ActivityLog a WHERE a.plant.id = :plantId AND a.loggedAt >= :startTime AND a.loggedAt <= :endTime ORDER BY a.loggedAt DESC")
+    List<ActivityLog> findByPlantIdAndLoggedAtBetween(@Param("plantId") UUID plantId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    /**
+     * Finds activity logs for a plant within a time range.
      *
      * @param plantId the ID of the plant
      * @param startTime the range start time

@@ -29,6 +29,17 @@ public interface FeedingEventRepository extends JpaRepository<FeedingEvent, UUID
 
     /**
      * Finds feeding events for a plant by feeding type.
+     * Optimized for analytics queries using composite indexes.
+     *
+     * @param plantId the ID of the plant
+     * @param feedingType the feeding type
+     * @return a list of feeding events of the specified type
+     */
+    @Query("SELECT f FROM FeedingEvent f WHERE f.plant.id = :plantId AND f.feedingType = :feedingType ORDER BY f.fedAt DESC")
+    List<FeedingEvent> findByPlantIdAndFeedingType(@Param("plantId") UUID plantId, @Param("feedingType") FeedingType feedingType);
+
+    /**
+     * Finds feeding events for a plant by feeding type.
      *
      * @param plantId the ID of the plant
      * @param feedingType the feeding type
@@ -36,6 +47,18 @@ public interface FeedingEventRepository extends JpaRepository<FeedingEvent, UUID
      */
     @Query("SELECT f FROM FeedingEvent f WHERE f.plant.id = :plantId AND f.feedingType = :feedingType ORDER BY f.fedAt DESC")
     List<FeedingEvent> findByPlantIdAndType(@Param("plantId") UUID plantId, @Param("feedingType") FeedingType feedingType);
+
+    /**
+     * Finds feeding events for a plant within a time range.
+     * Optimized for analytics queries using timestamp indexes.
+     *
+     * @param plantId the ID of the plant
+     * @param startTime the range start time
+     * @param endTime the range end time
+     * @return a list of feeding events within the time range
+     */
+    @Query("SELECT f FROM FeedingEvent f WHERE f.plant.id = :plantId AND f.fedAt >= :startTime AND f.fedAt <= :endTime ORDER BY f.fedAt DESC")
+    List<FeedingEvent> findByPlantIdAndFedAtBetween(@Param("plantId") UUID plantId, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
 
     /**
      * Finds feeding events for a plant within a time range.

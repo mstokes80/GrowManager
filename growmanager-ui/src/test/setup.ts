@@ -46,3 +46,13 @@ Object.defineProperty(window, 'visualViewport', {
     removeEventListener: () => {},
   },
 });
+
+// Mock ResizeObserver for Recharts
+global.ResizeObserver = class ResizeObserver {
+  constructor(_callback: ResizeObserverCallback) {
+    // Mock implementation
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};

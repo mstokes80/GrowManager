@@ -1,7 +1,9 @@
 package com.growmanager.controller;
 
 import com.growmanager.dto.CreateEnvironmentalSnapshotRequest;
+import com.growmanager.dto.EnvironmentalImportResponse;
 import com.growmanager.dto.EnvironmentalSnapshotResponse;
+import com.growmanager.dto.PageResponse;
 import com.growmanager.service.EnvironmentalSnapshotService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,13 +17,19 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -106,35 +114,66 @@ public class EnvironmentalSnapshotController {
 
     /**
      * Gets all environmental snapshots for a grow.
-     * Optionally filters by date range.
+     * Optionally filters by date range or uses pagination.
      *
      * @param growId the grow ID
      * @param startDate the optional start date filter (ISO 8601 format)
      * @param endDate the optional end date filter (ISO 8601 format)
-     * @return list of environmental snapshots with 200 OK status
+     * @param page the page number (0-indexed, default 0)
+     * @param size the page size (default 20, max 100)
+     * @param sort the sort field and direction (default "timestamp,desc")
+     * @return list or paginated environmental snapshots with 200 OK status
      */
     @GetMapping("/api/grows/{growId}/environmental")
     @Operation(summary = "List environmental snapshots for grow",
-            description = "Returns all environmental snapshots for a grow, optionally filtered by date range")
+            description = "Returns environmental snapshots for a grow. Supports date range filtering OR pagination (not both). " +
+                    "If page/size parameters are provided, returns paginated results. Otherwise returns all results (optionally filtered by date range).")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Environmental snapshots retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token"),
             @ApiResponse(responseCode = "403", description = "Email not verified"),
             @ApiResponse(responseCode = "404", description = "Grow not found")
     })
-    public ResponseEntity<List<EnvironmentalSnapshotResponse>> getSnapshotsByGrow(
+    public ResponseEntity<?> getSnapshotsByGrow(
             @PathVariable UUID growId,
             @Parameter(description = "Start date filter (ISO 8601 format: yyyy-MM-dd'T'HH:mm:ss)")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @Parameter(description = "End date filter (ISO 8601 format: yyyy-MM-dd'T'HH:mm:ss)")
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @Parameter(description = "Page number (0-indexed)")
+            @RequestParam(required = false) Integer page,
+            @Parameter(description = "Page size (max 100)")
+            @RequestParam(required = false) Integer size,
+            @Parameter(description = "Sort field and direction (e.g., 'timestamp,desc')")
+            @RequestParam(required = false, defaultValue = "timestamp,desc") String sort) {
         UUID userId = getUserIdFromAuthentication();
         logger.info("Get environmental snapshots for grow ID: {} and user ID: {}", growId, userId);
 
-        List<EnvironmentalSnapshotResponse> snapshots = snapshotService.getSnapshotsByGrow(
-                userId, growId, startDate, endDate);
+        // If pagination parameters are provided, use paginated endpoint
+        if (page != null || size != null) {
+            int pageNum = page != null ? page : 0;
+            int pageSize = size != null ? Math.min(size, 100) : 20; // Default 20, max 100
 
-        return ResponseEntity.ok(snapshots);
+            // Parse sort parameter
+            String[] sortParts = sort.split(",");
+            String sortField = sortParts[0];
+            Sort.Direction direction = sortParts.length > 1 && sortParts[1].equalsIgnoreCase("asc")
+                    ? Sort.Direction.ASC
+                    : Sort.Direction.DESC;
+
+            Pageable pageable = PageRequest.of(pageNum, pageSize, Sort.by(direction, sortField));
+
+            PageResponse<EnvironmentalSnapshotResponse> paginatedSnapshots =
+                    snapshotService.getSnapshotsByGrowPaginated(userId, growId, pageable);
+
+            return ResponseEntity.ok(paginatedSnapshots);
+        } else {
+            // Use non-paginated endpoint with optional date range filtering
+            List<EnvironmentalSnapshotResponse> snapshots = snapshotService.getSnapshotsByGrow(
+                    userId, growId, startDate, endDate);
+
+            return ResponseEntity.ok(snapshots);
+        }
     }
 
     /**
@@ -159,6 +198,42 @@ public class EnvironmentalSnapshotController {
         List<EnvironmentalSnapshotResponse> snapshots = snapshotService.getSnapshotsByPlant(userId, plantId);
 
         return ResponseEntity.ok(snapshots);
+    }
+
+    /**
+     * Imports environmental data from an AC Infinity CSV file.
+     * CSV format: Time, Temperature, Relative Humidity, VPD
+     *
+     * @param growId the grow ID
+     * @param file the CSV file to import
+     * @return import response with statistics and errors
+     */
+    @PostMapping(value = "/api/grows/{growId}/environmental/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Import environmental data from CSV",
+            description = "Imports environmental data from an AC Infinity CSV file. " +
+                    "Expected columns: Time, Temperature, Relative Humidity, VPD. " +
+                    "Does not enforce minimum interval validation for historical data.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Import completed (check response for details)",
+                    content = @Content(schema = @Schema(implementation = EnvironmentalImportResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid file or format"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token"),
+            @ApiResponse(responseCode = "403", description = "Email not verified"),
+            @ApiResponse(responseCode = "404", description = "Grow not found")
+    })
+    public ResponseEntity<EnvironmentalImportResponse> importEnvironmentalData(
+            @PathVariable UUID growId,
+            @Parameter(description = "CSV file to import", required = true)
+            @RequestParam("file") MultipartFile file) throws IOException {
+        UUID userId = getUserIdFromAuthentication();
+        logger.info("Import environmental data from CSV for grow ID: {} and user ID: {}", growId, userId);
+
+        EnvironmentalImportResponse response = snapshotService.importAcInfinityCSV(userId, growId, file);
+
+        logger.info("Import completed: {} imported, {} skipped out of {} total records",
+                response.getImportedCount(), response.getSkippedCount(), response.getTotalRecords());
+
+        return ResponseEntity.ok(response);
     }
 
     /**
