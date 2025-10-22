@@ -58,6 +58,9 @@ public class YieldAnalyticsResponse {
         private Double avgWetWeight;
         private Double avgDryWeight;
         private Double avgWetToDryRatio;
+        private Double totalHashYield; // Total hash yield in grams
+        private Double avgHashYieldPerPlant; // Average hash yield per plant
+        private Double avgHashYieldPercentage; // Hash yield as % of wet weight
         private Integer totalHarvests;
         private Integer totalPlantsHarvested;
     }

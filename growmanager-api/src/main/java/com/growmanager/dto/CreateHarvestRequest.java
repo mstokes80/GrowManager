@@ -29,6 +29,9 @@ public class CreateHarvestRequest {
     @DecimalMin(value = "0.01", message = "Dry weight must be greater than 0")
     private BigDecimal dryWeight;
 
+    @DecimalMin(value = "0.01", message = "Hash yield must be greater than 0")
+    private BigDecimal hashYield;
+
     @NotNull(message = "Weight unit is required")
     private WeightUnit weightUnit;
 

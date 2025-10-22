@@ -3,6 +3,8 @@
  * TypeScript types for analytics API requests and responses
  */
 
+import type { Amendment } from './feedingEvent';
+
 // ============================================================================
 // Dashboard Metrics Types
 // ============================================================================
@@ -74,6 +76,7 @@ export interface EnvironmentalDataPoint {
   vpd?: number;
   co2?: number;
   lightIntensity?: number;
+  soilMoisture?: number;
 }
 
 export interface ParameterStatistics {
@@ -95,6 +98,7 @@ export interface EnvironmentalSummary {
   vpd: ParameterStatistics | null;
   co2: ParameterStatistics | null;
   light: ParameterStatistics | null;
+  soilMoisture: ParameterStatistics | null;
   daysOutOfRange: number;
   stabilityScore: number;
 }
@@ -105,6 +109,7 @@ export interface StageEnvironmentalData {
   avgVpd: number;
   avgCo2: number | null;
   avgLight: number | null;
+  avgSoilMoisture: number | null;
   dataPointCount: number;
 }
 
@@ -249,6 +254,9 @@ export interface YieldMetrics {
   avgWetWeight: number;
   avgDryWeight: number;
   avgWetToDryRatio: number;
+  totalHashYield: number;
+  avgHashYieldPerPlant: number;
+  avgHashYieldPercentage: number;
   totalHarvests: number;
   totalPlantsHarvested: number;
 }
@@ -320,6 +328,7 @@ export interface TimelineEventDetails {
   ph?: number | null;
   waterVolume?: number | null;
   nutrients?: string[] | null;
+  amendments?: Amendment[] | null;
   activityType?: string | null;
   notes?: string | null;
   temperature?: number | null;

@@ -24,32 +24,27 @@ const harvestSchema = z.object({
     .number()
     .positive('Wet weight must be greater than 0')
     .max(99999, 'Wet weight is too large'),
-  dryWeight: z.coerce
-    .number()
-    .positive('Dry weight must be greater than 0')
-    .max(99999, 'Dry weight is too large')
-    .optional()
-    .or(z.literal('')),
+  dryWeight: z.union([
+    z.literal(''),
+    z.coerce.number().positive('Dry weight must be greater than 0').max(99999, 'Dry weight is too large')
+  ]).optional(),
+  hashYield: z.union([
+    z.literal(''),
+    z.coerce.number().positive('Hash yield must be greater than 0').max(99999, 'Hash yield is too large')
+  ]).optional(),
   weightUnit: z.enum(['GRAMS', 'OUNCES']),
-  thcPercent: z.coerce
-    .number()
-    .min(0, 'THC % must be at least 0')
-    .max(100, 'THC % must not exceed 100')
-    .optional()
-    .or(z.literal('')),
-  cbdPercent: z.coerce
-    .number()
-    .min(0, 'CBD % must be at least 0')
-    .max(100, 'CBD % must not exceed 100')
-    .optional()
-    .or(z.literal('')),
-  qualityRating: z.coerce
-    .number()
-    .int()
-    .min(1, 'Quality rating must be at least 1')
-    .max(10, 'Quality rating must not exceed 10')
-    .optional()
-    .or(z.literal('')),
+  thcPercent: z.union([
+    z.literal(''),
+    z.coerce.number().min(0, 'THC % must be at least 0').max(100, 'THC % must not exceed 100')
+  ]).optional(),
+  cbdPercent: z.union([
+    z.literal(''),
+    z.coerce.number().min(0, 'CBD % must be at least 0').max(100, 'CBD % must not exceed 100')
+  ]).optional(),
+  qualityRating: z.union([
+    z.literal(''),
+    z.coerce.number().int().min(1, 'Quality rating must be at least 1').max(10, 'Quality rating must not exceed 10')
+  ]).optional(),
   notes: z
     .string()
     .max(2000, 'Notes must be 2000 characters or less')
@@ -90,6 +85,7 @@ export function CreateHarvestForm({
       harvestDate: format(new Date(), 'yyyy-MM-dd'),
       wetWeight: undefined,
       dryWeight: undefined,
+      hashYield: undefined,
       weightUnit: 'GRAMS',
       thcPercent: undefined,
       cbdPercent: undefined,
@@ -190,6 +186,30 @@ export function CreateHarvestForm({
         )}
         <p className="text-sm text-muted-foreground">
           You can add dry weight later after the harvest has dried
+        </p>
+      </div>
+
+      {/* Hash Yield Field */}
+      <div className="space-y-2">
+        <Label htmlFor="hashYield">
+          Hash Yield (grams)
+        </Label>
+        <Input
+          id="hashYield"
+          type="number"
+          step="0.01"
+          placeholder="0.00 (optional - for fresh frozen/hash processing)"
+          {...register('hashYield')}
+          aria-invalid={!!errors.hashYield}
+        />
+        {errors.hashYield && (
+          <p className="text-sm text-destructive flex items-center gap-1">
+            <AlertCircle className="h-4 w-4" />
+            {errors.hashYield.message}
+          </p>
+        )}
+        <p className="text-sm text-muted-foreground">
+          For growers who fresh freeze and process into hash
         </p>
       </div>
 

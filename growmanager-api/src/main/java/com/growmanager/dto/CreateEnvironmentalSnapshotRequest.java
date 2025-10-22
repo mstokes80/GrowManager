@@ -37,5 +37,9 @@ public class CreateEnvironmentalSnapshotRequest {
     @DecimalMax(value = "2000.0", message = "Light intensity must not exceed 2000 PPFD")
     private BigDecimal lightIntensity;
 
+    @DecimalMin(value = "0.0", message = "Soil moisture must be at least 0 kPa")
+    @DecimalMax(value = "200.0", message = "Soil moisture must not exceed 200 kPa")
+    private BigDecimal soilMoisture;
+
     private String notes;
 }

@@ -308,6 +308,7 @@ public class EnvironmentalSnapshotService {
                 .humidity(request.getHumidity())
                 .co2(request.getCo2())
                 .lightIntensity(request.getLightIntensity())
+                .soilMoisture(request.getSoilMoisture())
                 .notes(request.getNotes())
                 .build();
 

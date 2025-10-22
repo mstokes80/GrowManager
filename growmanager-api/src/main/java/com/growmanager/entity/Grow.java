@@ -7,6 +7,7 @@ import com.growmanager.config.EnvironmentTypeDeserializer;
 import com.growmanager.config.EnvironmentTypeSerializer;
 import com.growmanager.config.GrowStatusDeserializer;
 import com.growmanager.config.GrowStatusSerializer;
+import com.growmanager.dto.LightEquipmentDTO;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -109,6 +110,25 @@ public class Grow {
     @Column(name = "expected_harvest_date")
     private LocalDate expectedHarvestDate;
 
+    @DecimalMin(value = "0.0", message = "Canopy square footage must be at least 0")
+    @DecimalMax(value = "10000.0", message = "Canopy square footage must not exceed 10000")
+    @Column(name = "canopy_square_ft", precision = 8, scale = 2)
+    private BigDecimal canopySquareFt;
+
+    @Column(name = "vegetative_date")
+    private LocalDate vegetativeDate;
+
+    @Column(name = "flower_date")
+    private LocalDate flowerDate;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "lights", columnDefinition = "jsonb")
+    private List<LightEquipmentDTO> lights;
+
+    @Size(max = 1, message = "Temperature unit must be a single character")
+    @Column(name = "temp_uom", length = 1)
+    private String tempUom;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "tags", columnDefinition = "jsonb")
     private List<String> tags;
@@ -117,6 +137,53 @@ public class Grow {
     @Column(name = "sort_order", nullable = false)
     @Builder.Default
     private Integer sortOrder = 0;
+
+    // Organic growing fields
+    @Column(name = "is_organic")
+    @Builder.Default
+    private Boolean isOrganic = false;
+
+    @Size(max = 255, message = "Soil source must not exceed 255 characters")
+    @Column(name = "soil_source", length = 255)
+    private String soilSource;
+
+    @Size(max = 100, message = "Soil texture must not exceed 100 characters")
+    @Column(name = "soil_texture", length = 100)
+    private String soilTexture;
+
+    @DecimalMin(value = "0.0", message = "Organic matter percent must be at least 0%")
+    @DecimalMax(value = "100.0", message = "Organic matter percent must not exceed 100%")
+    @Column(name = "organic_matter_percent", precision = 5, scale = 2)
+    private BigDecimal organicMatterPercent;
+
+    @Size(max = 255, message = "Base nutrient profile must not exceed 255 characters")
+    @Column(name = "base_nutrient_profile", length = 255)
+    private String baseNutrientProfile;
+
+    @Min(value = 0, message = "Soil reused cycles must be at least 0")
+    @Column(name = "soil_reused_cycles")
+    @Builder.Default
+    private Integer soilReusedCycles = 0;
+
+    @Column(name = "mycorrhizae_added")
+    @Builder.Default
+    private Boolean mycorrhizaeAdded = false;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "microbe_inoculants", columnDefinition = "jsonb")
+    private List<String> microbeInoculants;
+
+    @Size(max = 255, message = "Cover crop type must not exceed 255 characters")
+    @Column(name = "cover_crop_type", length = 255)
+    private String coverCropType;
+
+    @Size(max = 255, message = "Mulch type must not exceed 255 characters")
+    @Column(name = "mulch_type", length = 255)
+    private String mulchType;
+
+    @Column(name = "compost_reused")
+    @Builder.Default
+    private Boolean compostReused = false;
 
     @OneToMany(mappedBy = "grow", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

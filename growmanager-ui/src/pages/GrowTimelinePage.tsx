@@ -606,7 +606,7 @@ export default function GrowTimelinePage() {
                     <div className="mt-2 space-y-2">
                       {Object.entries(selectedEvent.details)
                         .filter(([_, value]) => value != null && (Array.isArray(value) ? value.length > 0 : true))
-                        .filter(([key]) => key !== 'photoUrls')
+                        .filter(([key]) => key !== 'photoUrls' && key !== 'amendments')
                         .map(([key, value]) => (
                           <div key={key} className="flex justify-between items-center p-2 rounded bg-muted/50">
                             <span className="text-sm capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
@@ -615,6 +615,25 @@ export default function GrowTimelinePage() {
                             </span>
                           </div>
                         ))}
+
+                      {/* Display amendments separately with better formatting */}
+                      {selectedEvent.details.amendments && selectedEvent.details.amendments.length > 0 && (
+                        <div className="p-2 rounded bg-muted/50">
+                          <span className="text-sm capitalize block mb-2 font-medium">Amendments</span>
+                          <div className="space-y-1 ml-2">
+                            {selectedEvent.details.amendments.map((amendment, idx) => (
+                              <div key={idx} className="text-sm">
+                                • {amendment.name} - {amendment.amount} {amendment.unit}
+                                {amendment.applicationType && (
+                                  <span className="text-muted-foreground ml-1">
+                                    ({amendment.applicationType.replace('_', ' ')})
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

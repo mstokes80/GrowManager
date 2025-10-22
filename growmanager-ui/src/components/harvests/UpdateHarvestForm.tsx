@@ -11,24 +11,22 @@ import type { Harvest } from '@/types/harvest';
 
 // Validation schema using Zod
 const updateHarvestSchema = z.object({
-  dryWeight: z.coerce
-    .number()
-    .positive('Dry weight must be greater than 0')
-    .max(99999, 'Dry weight is too large')
-    .optional()
-    .or(z.literal('')),
-  thcPercent: z.coerce
-    .number()
-    .min(0, 'THC % must be at least 0')
-    .max(100, 'THC % must not exceed 100')
-    .optional()
-    .or(z.literal('')),
-  cbdPercent: z.coerce
-    .number()
-    .min(0, 'CBD % must be at least 0')
-    .max(100, 'CBD % must not exceed 100')
-    .optional()
-    .or(z.literal('')),
+  dryWeight: z.union([
+    z.literal(''),
+    z.coerce.number().positive('Dry weight must be greater than 0').max(99999, 'Dry weight is too large')
+  ]).optional(),
+  hashYield: z.union([
+    z.literal(''),
+    z.coerce.number().positive('Hash yield must be greater than 0').max(99999, 'Hash yield is too large')
+  ]).optional(),
+  thcPercent: z.union([
+    z.literal(''),
+    z.coerce.number().min(0, 'THC % must be at least 0').max(100, 'THC % must not exceed 100')
+  ]).optional(),
+  cbdPercent: z.union([
+    z.literal(''),
+    z.coerce.number().min(0, 'CBD % must be at least 0').max(100, 'CBD % must not exceed 100')
+  ]).optional(),
   qualityRating: z.coerce
     .number()
     .int()
@@ -42,7 +40,13 @@ const updateHarvestSchema = z.object({
     .optional(),
 });
 
-export type UpdateHarvestFormData = z.infer<typeof updateHarvestSchema>;
+export type UpdateHarvestFormData = z.infer<typeof updateHarvestSchema> & {
+  dryWeight?: number | string | null;
+  hashYield?: number | string | null;
+  thcPercent?: number | string | null;
+  cbdPercent?: number | string | null;
+  qualityRating?: number | string | null;
+};
 
 interface UpdateHarvestFormProps {
   harvest: Harvest;
@@ -74,6 +78,7 @@ export function UpdateHarvestForm({
     resolver: zodResolver(updateHarvestSchema),
     defaultValues: {
       dryWeight: harvest.dryWeight || undefined,
+      hashYield: harvest.hashYield || undefined,
       thcPercent: harvest.thcPercent || undefined,
       cbdPercent: harvest.cbdPercent || undefined,
       qualityRating: harvest.qualityRating || undefined,
@@ -136,6 +141,28 @@ export function UpdateHarvestForm({
         )}
         <p className="text-sm text-muted-foreground">
           Add or update dry weight after the harvest has dried
+        </p>
+      </div>
+
+      {/* Hash Yield Field */}
+      <div className="space-y-2">
+        <Label htmlFor="hashYield">Hash Yield (grams)</Label>
+        <Input
+          id="hashYield"
+          type="number"
+          step="0.01"
+          placeholder="0.00"
+          {...register('hashYield')}
+          aria-invalid={!!errors.hashYield}
+        />
+        {errors.hashYield && (
+          <p className="text-sm text-destructive flex items-center gap-1">
+            <AlertCircle className="h-4 w-4" />
+            {errors.hashYield.message}
+          </p>
+        )}
+        <p className="text-sm text-muted-foreground">
+          For growers who fresh freeze and process into hash
         </p>
       </div>
 

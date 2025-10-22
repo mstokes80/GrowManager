@@ -175,7 +175,7 @@ export function TimeRangeSelector({
                       type="date"
                       value={customFrom}
                       onChange={(e) => setCustomFrom(e.target.value)}
-                      className="w-full px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-2 py-1 text-sm border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                       max={customTo}
                     />
                   </div>
@@ -191,7 +191,7 @@ export function TimeRangeSelector({
                       type="date"
                       value={customTo}
                       onChange={(e) => setCustomTo(e.target.value)}
-                      className="w-full px-2 py-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-2 py-1 text-sm border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                       min={customFrom}
                       max={format(new Date(), 'yyyy-MM-dd')}
                     />

@@ -35,6 +35,7 @@ import {
   Loader2,
   AlertCircle,
   BarChart3,
+  Sprout,
 } from 'lucide-react';
 import {
   formatChartDate,
@@ -70,6 +71,9 @@ export default function EnvironmentalAnalyticsPage() {
     label: 'Last 30 days',
   });
 
+  // Aggregation state
+  const [aggregation, setAggregation] = useState<'hourly' | 'daily' | 'weekly' | 'monthly'>('daily');
+
   // Parameter visibility toggles
   const [visibleParams, setVisibleParams] = useState({
     temperature: true,
@@ -77,6 +81,7 @@ export default function EnvironmentalAnalyticsPage() {
     vpd: true,
     co2: true,
     light: true,
+    soilMoisture: true,
   });
 
   // Fetch the selected grow's details (for target ranges)
@@ -88,7 +93,7 @@ export default function EnvironmentalAnalyticsPage() {
       growId: selectedGrowId || undefined,
       startDate: format(timeRange.from, 'yyyy-MM-dd'),
       endDate: format(timeRange.to, 'yyyy-MM-dd'),
-      aggregation: 'daily',
+      aggregation,
     },
     {
       enabled: !!selectedGrowId, // Only run query when a grow is selected
@@ -116,6 +121,7 @@ export default function EnvironmentalAnalyticsPage() {
       vpd: point.vpd,
       co2: point.co2,
       lightIntensity: point.lightIntensity,
+      soilMoisture: point.soilMoisture,
     }));
   }, [data?.dataPoints]);
 
@@ -160,6 +166,20 @@ export default function EnvironmentalAnalyticsPage() {
                     {grow.name}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={aggregation}
+              onValueChange={(value: any) => setAggregation(value)}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="hourly">Hourly</SelectItem>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
               </SelectContent>
             </Select>
             <TimeRangeSelector
@@ -283,6 +303,16 @@ export default function EnvironmentalAnalyticsPage() {
                     />
                     <Label htmlFor="light-toggle" className="cursor-pointer">
                       Light
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="soil-moisture-toggle"
+                      checked={visibleParams.soilMoisture}
+                      onChange={() => toggleParameter('soilMoisture')}
+                    />
+                    <Label htmlFor="soil-moisture-toggle" className="cursor-pointer">
+                      Soil Moisture
                     </Label>
                   </div>
                 </div>
@@ -432,6 +462,40 @@ export default function EnvironmentalAnalyticsPage() {
                             <p className="text-xs text-muted-foreground">Optimal Range</p>
                             <p className="text-lg font-semibold">
                               {data.summary.vpd.optimalRange.min}-{data.summary.vpd.optimalRange.max} {data.summary.vpd.optimalRange.unit}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Soil Moisture Details */}
+                    {data.summary.soilMoisture && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 pb-2 border-b">
+                          <Sprout className="h-5 w-5 text-amber-700" />
+                          <h4 className="font-semibold">Soil Moisture</h4>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Minimum</p>
+                            <p className="text-lg font-semibold">{data.summary.soilMoisture.min.toFixed(1)} kPa</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Maximum</p>
+                            <p className="text-lg font-semibold">{data.summary.soilMoisture.max.toFixed(1)} kPa</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Average</p>
+                            <p className="text-lg font-semibold">{data.summary.soilMoisture.average.toFixed(1)} kPa</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Std Deviation</p>
+                            <p className="text-lg font-semibold">{data.summary.soilMoisture.standardDeviation.toFixed(2)} kPa</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Optimal Range</p>
+                            <p className="text-lg font-semibold">
+                              {data.summary.soilMoisture.optimalRange.min}-{data.summary.soilMoisture.optimalRange.max} {data.summary.soilMoisture.optimalRange.unit}
                             </p>
                           </div>
                         </div>
@@ -635,6 +699,54 @@ export default function EnvironmentalAnalyticsPage() {
               </ChartWrapper>
             )}
 
+            {/* Soil Moisture Trend Chart */}
+            {visibleParams.soilMoisture && (
+              <ChartWrapper
+                title="Soil Moisture Trend"
+                description={data.summary?.soilMoisture?.optimalRange
+                  ? `Optimal: ${data.summary.soilMoisture.optimalRange.min}-${data.summary.soilMoisture.optimalRange.max} ${data.summary.soilMoisture.optimalRange.unit} (lower = wetter)`
+                  : 'Soil moisture over time'}
+                data={chartData}
+                exportFilename="soil-moisture-trend.csv"
+                height={300}
+              >
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis
+                    dataKey="date"
+                    stroke="#6b7280"
+                    style={{ fontSize: '12px' }}
+                  />
+                  <YAxis
+                    stroke="#6b7280"
+                    style={{ fontSize: '12px' }}
+                    domain={[0, 200]}
+                    reversed
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
+                  {data.summary?.soilMoisture?.optimalRange && (
+                    <ReferenceArea
+                      y1={data.summary.soilMoisture.optimalRange.min}
+                      y2={data.summary.soilMoisture.optimalRange.max}
+                      fill={CHART_COLORS.success}
+                      fillOpacity={0.1}
+                      label="Optimal Range"
+                    />
+                  )}
+                  <Line
+                    type="monotone"
+                    dataKey="soilMoisture"
+                    name="Soil Moisture (kPa)"
+                    stroke="#d97706"
+                    strokeWidth={2}
+                    dot={{ fill: '#d97706', r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ChartWrapper>
+            )}
+
             {/* Multi-Parameter Chart (Temperature & Humidity) */}
             <ChartWrapper
               title="Temperature & Humidity Correlation"
@@ -733,6 +845,12 @@ export default function EnvironmentalAnalyticsPage() {
                               <span className="font-medium">{Math.round(data.stageComparison.vegetative.avgLight)} μmol/m²/s</span>
                             </div>
                           )}
+                          {data.stageComparison.vegetative.avgSoilMoisture && (
+                            <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                              <span className="text-sm text-muted-foreground">Soil Moisture</span>
+                              <span className="font-medium">{data.stageComparison.vegetative.avgSoilMoisture.toFixed(1)} kPa</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -771,6 +889,12 @@ export default function EnvironmentalAnalyticsPage() {
                             <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
                               <span className="text-sm text-muted-foreground">Light</span>
                               <span className="font-medium">{Math.round(data.stageComparison.flowering.avgLight)} μmol/m²/s</span>
+                            </div>
+                          )}
+                          {data.stageComparison.flowering.avgSoilMoisture && (
+                            <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                              <span className="text-sm text-muted-foreground">Soil Moisture</span>
+                              <span className="font-medium">{data.stageComparison.flowering.avgSoilMoisture.toFixed(1)} kPa</span>
                             </div>
                           )}
                         </div>

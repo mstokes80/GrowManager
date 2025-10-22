@@ -4,10 +4,14 @@ import { usePlant, useUpdatePlant, useDeletePlant, useCreatePlant } from '@/serv
 import {
   useFeedingEventsByPlant,
   useCreateFeedingEvent,
+  useUpdateFeedingEvent,
+  useDeleteFeedingEvent,
 } from '@/services/feedingEventsApi';
 import {
   useActivityLogsByPlant,
   useCreateActivityLog,
+  useUpdateActivityLog,
+  useDeleteActivityLog,
 } from '@/services/activityLogsApi';
 import {
   useObservationsByPlant,
@@ -85,7 +89,13 @@ export default function PlantDetailPage() {
   const [isObservationDialogOpen, setIsObservationDialogOpen] = useState(false);
   const [isEditObservationDialogOpen, setIsEditObservationDialogOpen] = useState(false);
   const [isHarvestDialogOpen, setIsHarvestDialogOpen] = useState(false);
+  const [isEditFeedingDialogOpen, setIsEditFeedingDialogOpen] = useState(false);
+  const [isDeleteFeedingDialogOpen, setIsDeleteFeedingDialogOpen] = useState(false);
+  const [isEditActivityDialogOpen, setIsEditActivityDialogOpen] = useState(false);
+  const [isDeleteActivityDialogOpen, setIsDeleteActivityDialogOpen] = useState(false);
   const [selectedObservation, setSelectedObservation] = useState<Observation | null>(null);
+  const [selectedFeedingEvent, setSelectedFeedingEvent] = useState<any | null>(null);
+  const [selectedActivityLog, setSelectedActivityLog] = useState<any | null>(null);
 
   const { data: plant, isLoading, error } = usePlant(id || '');
   const { data: feedingEvents = [], isLoading: feedingLoading } = useFeedingEventsByPlant(
@@ -107,6 +117,10 @@ export default function PlantDetailPage() {
   const updateObservationMutation = useUpdateObservation();
   const deleteObservationMutation = useDeleteObservation();
   const createHarvestMutation = useCreateHarvest();
+  const updateFeedingEventMutation = useUpdateFeedingEvent();
+  const deleteFeedingEventMutation = useDeleteFeedingEvent();
+  const updateActivityLogMutation = useUpdateActivityLog();
+  const deleteActivityLogMutation = useDeleteActivityLog();
 
   const handleUpdatePlant = async (data: PlantFormData) => {
     if (!id) return;
@@ -386,6 +400,7 @@ export default function PlantDetailPage() {
         thcPercent: data.thcPercent === '' ? undefined : data.thcPercent,
         cbdPercent: data.cbdPercent === '' ? undefined : data.cbdPercent,
         qualityRating: data.qualityRating === '' ? undefined : data.qualityRating,
+        hashYield: data.hashYield === '' ? undefined : data.hashYield,
       };
 
       await createHarvestMutation.mutateAsync({
@@ -405,6 +420,138 @@ export default function PlantDetailPage() {
         variant: 'destructive',
         title: 'Failed to log harvest',
         description: 'An error occurred while logging the harvest. Please try again.',
+      });
+    }
+  };
+
+  const handleEditFeedingEvent = (event: any) => {
+    setSelectedFeedingEvent(event);
+    setIsEditFeedingDialogOpen(true);
+  };
+
+  const handleUpdateFeedingEvent = async (data: LogFeedingFormData) => {
+    if (!selectedFeedingEvent) return;
+
+    try {
+      await updateFeedingEventMutation.mutateAsync({
+        id: selectedFeedingEvent.id,
+        data: {
+          feedingType: data.feedingType,
+          amountMl: data.amountMl,
+          ecLevel: data.ecLevel || undefined,
+          phLevel: data.phLevel || undefined,
+          nutrientMix: data.nutrientMix || undefined,
+          amendments: data.amendments as Amendment[] | undefined,
+          notes: data.notes || undefined,
+          fedAt: data.fedAt,
+        },
+      });
+
+      toast({
+        title: 'Success!',
+        description: 'Feeding event has been updated.',
+      });
+
+      setIsEditFeedingDialogOpen(false);
+      setSelectedFeedingEvent(null);
+    } catch (error) {
+      console.error('Failed to update feeding event:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to update feeding event',
+        description: 'An error occurred while updating the feeding event. Please try again.',
+      });
+    }
+  };
+
+  const handleDeleteFeedingEvent = (event: any) => {
+    setSelectedFeedingEvent(event);
+    setIsDeleteFeedingDialogOpen(true);
+  };
+
+  const handleConfirmDeleteFeedingEvent = async () => {
+    if (!selectedFeedingEvent) return;
+
+    try {
+      await deleteFeedingEventMutation.mutateAsync(selectedFeedingEvent.id);
+
+      toast({
+        title: 'Deleted',
+        description: 'Feeding event has been deleted successfully.',
+      });
+
+      setIsDeleteFeedingDialogOpen(false);
+      setSelectedFeedingEvent(null);
+    } catch (error) {
+      console.error('Failed to delete feeding event:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to delete feeding event',
+        description: 'An error occurred while deleting the feeding event. Please try again.',
+      });
+    }
+  };
+
+  const handleEditActivityLog = (log: any) => {
+    setSelectedActivityLog(log);
+    setIsEditActivityDialogOpen(true);
+  };
+
+  const handleUpdateActivityLog = async (data: LogActivityFormData) => {
+    if (!selectedActivityLog) return;
+
+    try {
+      await updateActivityLogMutation.mutateAsync({
+        id: selectedActivityLog.id,
+        data: {
+          activityType: data.activityType,
+          description: data.description,
+          notes: data.notes || undefined,
+          loggedAt: data.loggedAt,
+        },
+      });
+
+      toast({
+        title: 'Success!',
+        description: 'Activity log has been updated.',
+      });
+
+      setIsEditActivityDialogOpen(false);
+      setSelectedActivityLog(null);
+    } catch (error) {
+      console.error('Failed to update activity log:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to update activity log',
+        description: 'An error occurred while updating the activity log. Please try again.',
+      });
+    }
+  };
+
+  const handleDeleteActivityLog = (log: any) => {
+    setSelectedActivityLog(log);
+    setIsDeleteActivityDialogOpen(true);
+  };
+
+  const handleConfirmDeleteActivityLog = async () => {
+    if (!selectedActivityLog) return;
+
+    try {
+      await deleteActivityLogMutation.mutateAsync(selectedActivityLog.id);
+
+      toast({
+        title: 'Deleted',
+        description: 'Activity log has been deleted successfully.',
+      });
+
+      setIsDeleteActivityDialogOpen(false);
+      setSelectedActivityLog(null);
+    } catch (error) {
+      console.error('Failed to delete activity log:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to delete activity log',
+        description: 'An error occurred while deleting the activity log. Please try again.',
       });
     }
   };
@@ -648,6 +795,10 @@ export default function PlantDetailPage() {
                 feedingEvents={feedingEvents}
                 activityLogs={activityLogs}
                 isLoading={feedingLoading || activityLoading}
+                onEditFeedingEvent={handleEditFeedingEvent}
+                onDeleteFeedingEvent={handleDeleteFeedingEvent}
+                onEditActivityLog={handleEditActivityLog}
+                onDeleteActivityLog={handleDeleteActivityLog}
               />
             </TabsContent>
 
@@ -868,6 +1019,96 @@ export default function PlantDetailPage() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Edit Feeding Event Dialog */}
+      {selectedFeedingEvent && (
+        <Dialog open={isEditFeedingDialogOpen} onOpenChange={setIsEditFeedingDialogOpen}>
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Feeding Event</DialogTitle>
+            </DialogHeader>
+            <LogFeedingForm
+              plantId={id || ''}
+              initialData={selectedFeedingEvent}
+              onSubmit={handleUpdateFeedingEvent}
+              onCancel={() => {
+                setIsEditFeedingDialogOpen(false);
+                setSelectedFeedingEvent(null);
+              }}
+              isSubmitting={updateFeedingEventMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Delete Feeding Event Confirmation Dialog */}
+      <AlertDialog open={isDeleteFeedingDialogOpen} onOpenChange={setIsDeleteFeedingDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this feeding event. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedFeedingEvent(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDeleteFeedingEvent}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteFeedingEventMutation.isPending}
+            >
+              {deleteFeedingEventMutation.isPending ? 'Deleting...' : 'Delete Feeding Event'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Activity Log Dialog */}
+      {selectedActivityLog && (
+        <Dialog open={isEditActivityDialogOpen} onOpenChange={setIsEditActivityDialogOpen}>
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Activity Log</DialogTitle>
+            </DialogHeader>
+            <LogActivityForm
+              plantId={id || ''}
+              initialData={selectedActivityLog}
+              onSubmit={handleUpdateActivityLog}
+              onCancel={() => {
+                setIsEditActivityDialogOpen(false);
+                setSelectedActivityLog(null);
+              }}
+              isSubmitting={updateActivityLogMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Delete Activity Log Confirmation Dialog */}
+      <AlertDialog open={isDeleteActivityDialogOpen} onOpenChange={setIsDeleteActivityDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this activity log. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedActivityLog(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDeleteActivityLog}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteActivityLogMutation.isPending}
+            >
+              {deleteActivityLogMutation.isPending ? 'Deleting...' : 'Delete Activity Log'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -35,6 +35,11 @@ const environmentalSnapshotSchema = z.object({
     .min(0, 'Light intensity must be at least 0 PPFD')
     .max(2000, 'Light intensity must not exceed 2000 PPFD')
     .optional(),
+  soilMoisture: z.coerce
+    .number()
+    .min(0, 'Soil moisture must be at least 0 kPa')
+    .max(200, 'Soil moisture must not exceed 200 kPa')
+    .optional(),
   notes: z.string().optional(),
 });
 
@@ -46,6 +51,7 @@ export interface EnvironmentalSnapshotFormData {
   humidity?: number;
   co2?: number;
   lightIntensity?: number;
+  soilMoisture?: number; // kPa
   notes?: string;
 }
 
@@ -94,6 +100,7 @@ export function EnvironmentalSnapshotForm({
       humidity: data.humidity,
       co2: data.co2,
       lightIntensity: data.lightIntensity,
+      soilMoisture: data.soilMoisture,
       notes: data.notes,
     };
 
@@ -214,6 +221,24 @@ export function EnvironmentalSnapshotForm({
         )}
         <p className="text-xs text-muted-foreground">
           Photosynthetic Photon Flux Density (μmol/m²/s)
+        </p>
+      </div>
+
+      {/* Soil Moisture */}
+      <div className="space-y-2">
+        <Label htmlFor="soilMoisture">Soil Moisture (kPa)</Label>
+        <Input
+          id="soilMoisture"
+          type="number"
+          step="0.1"
+          placeholder="e.g., 25"
+          {...register('soilMoisture')}
+        />
+        {errors.soilMoisture && (
+          <p className="text-sm text-destructive">{errors.soilMoisture.message}</p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Soil moisture tension in kilopascals (lower values = wetter soil)
         </p>
       </div>
 

@@ -10,7 +10,7 @@ import java.util.UUID;
 
 /**
  * EnvironmentalSnapshot entity representing environmental condition measurements.
- * Stores temperature, humidity, CO2, light intensity, and VPD readings.
+ * Stores temperature, humidity, CO2, light intensity, VPD, and soil moisture readings.
  */
 @Entity
 @Table(name = "environmental_snapshots", indexes = {
@@ -72,6 +72,11 @@ public class EnvironmentalSnapshot {
     @DecimalMax(value = "5.0", message = "VPD must not exceed 5.0 kPa")
     @Column(name = "vpd", precision = 5, scale = 2)
     private BigDecimal vpd;
+
+    @DecimalMin(value = "0.0", message = "Soil moisture must be at least 0 kPa")
+    @DecimalMax(value = "200.0", message = "Soil moisture must not exceed 200 kPa")
+    @Column(name = "soil_moisture", precision = 6, scale = 2)
+    private BigDecimal soilMoisture;
 
     @NotNull(message = "Source is required")
     @Convert(converter = SnapshotSourceConverter.class)

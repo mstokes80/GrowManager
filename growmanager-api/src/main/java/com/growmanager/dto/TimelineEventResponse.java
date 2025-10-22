@@ -65,6 +65,7 @@ public class TimelineEventResponse {
         private Double ph;
         private Double waterVolume;
         private List<String> nutrients;
+        private List<AmendmentDTO> amendments;
 
         // Activity log details
         private String activityType;

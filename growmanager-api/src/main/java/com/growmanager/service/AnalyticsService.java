@@ -1,5 +1,7 @@
 package com.growmanager.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.growmanager.config.CacheConfig;
 import com.growmanager.dto.*;
 import com.growmanager.entity.*;
@@ -39,6 +41,7 @@ public class AnalyticsService {
     private final ObservationRepository observationRepository;
     private final HarvestRepository harvestRepository;
     private final CultivarRepository cultivarRepository;
+    private final ObjectMapper objectMapper;
 
     public AnalyticsService(
             GrowRepository growRepository,
@@ -48,7 +51,8 @@ public class AnalyticsService {
             ActivityLogRepository activityLogRepository,
             ObservationRepository observationRepository,
             HarvestRepository harvestRepository,
-            CultivarRepository cultivarRepository) {
+            CultivarRepository cultivarRepository,
+            ObjectMapper objectMapper) {
         this.growRepository = growRepository;
         this.plantRepository = plantRepository;
         this.environmentalSnapshotRepository = environmentalSnapshotRepository;
@@ -57,6 +61,7 @@ public class AnalyticsService {
         this.observationRepository = observationRepository;
         this.harvestRepository = harvestRepository;
         this.cultivarRepository = cultivarRepository;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -117,6 +122,10 @@ public class AnalyticsService {
         logger.info("Generating environmental trends for grow {} from {} to {} with {} aggregation",
                 growId, startDate, endDate, aggregation);
 
+        // Fetch the grow to get target environmental values
+        Grow grow = growRepository.findById(growId)
+                .orElseThrow(() -> new ResourceNotFoundException("Grow not found with id: " + growId));
+
         // Fetch all environmental snapshots for the time range
         List<EnvironmentalSnapshot> snapshots = environmentalSnapshotRepository
                 .findByGrowIdAndTimestampBetween(growId, startDate, endDate);
@@ -137,7 +146,7 @@ public class AnalyticsService {
 
         // Calculate statistical summary
         EnvironmentalTrendsResponse.StatisticalSummary summary = calculateStatisticalSummary(
-                snapshots, dataPoints);
+                snapshots, dataPoints, grow);
 
         // Calculate stage comparison if applicable
         EnvironmentalTrendsResponse.StageComparison stageComparison = calculateStageComparison(
@@ -216,6 +225,7 @@ public class AnalyticsService {
         List<Double> vpds = extractValues(snapshots, s -> s.getVpd());
         List<Double> co2Values = extractValues(snapshots, s -> s.getCo2());
         List<Integer> lightValues = extractIntegerValues(snapshots, s -> s.getLightIntensity());
+        List<Double> soilMoistureValues = extractValues(snapshots, s -> s.getSoilMoisture());
 
         return EnvironmentalTrendsResponse.DataPoint.builder()
                 .timestamp(bucketKey)
@@ -228,6 +238,7 @@ public class AnalyticsService {
                 .vpd(calculateAverage(vpds))
                 .co2(calculateAverage(co2Values))
                 .light(calculateAverageInteger(lightValues))
+                .soilMoisture(calculateAverage(soilMoistureValues))
                 .aggregationLevel(aggregation)
                 .build();
     }
@@ -331,11 +342,13 @@ public class AnalyticsService {
      *
      * @param snapshots  the raw snapshots
      * @param dataPoints the aggregated data points
+     * @param grow       the grow entity with target environmental values
      * @return statistical summary
      */
     private EnvironmentalTrendsResponse.StatisticalSummary calculateStatisticalSummary(
             List<EnvironmentalSnapshot> snapshots,
-            List<EnvironmentalTrendsResponse.DataPoint> dataPoints) {
+            List<EnvironmentalTrendsResponse.DataPoint> dataPoints,
+            Grow grow) {
 
         // Extract all values for statistics
         List<Double> temperatures = extractValues(snapshots, s -> s.getTemperature());
@@ -343,18 +356,33 @@ public class AnalyticsService {
         List<Double> vpds = extractValues(snapshots, s -> s.getVpd());
         List<Double> co2Values = extractValues(snapshots, s -> s.getCo2());
         List<Integer> lightValues = extractIntegerValues(snapshots, s -> s.getLightIntensity());
+        List<Double> soilMoistureValues = extractValues(snapshots, s -> s.getSoilMoisture());
 
-        // Calculate parameter statistics
+        // Calculate parameter statistics using grow-specific targets with fallback to defaults
+        double tempMin = grow.getTargetTempMin() != null
+                ? grow.getTargetTempMin().doubleValue()
+                : EnvironmentalCalculations.OPTIMAL_TEMP_MIN;
+        double tempMax = grow.getTargetTempMax() != null
+                ? grow.getTargetTempMax().doubleValue()
+                : EnvironmentalCalculations.OPTIMAL_TEMP_MAX;
+
+        double humidityMin = grow.getTargetHumidityMin() != null
+                ? grow.getTargetHumidityMin().doubleValue()
+                : EnvironmentalCalculations.OPTIMAL_HUMIDITY_MIN;
+        double humidityMax = grow.getTargetHumidityMax() != null
+                ? grow.getTargetHumidityMax().doubleValue()
+                : EnvironmentalCalculations.OPTIMAL_HUMIDITY_MAX;
+
         EnvironmentalTrendsResponse.ParameterStats tempStats = calculateParameterStats(
                 temperatures,
-                EnvironmentalCalculations.OPTIMAL_TEMP_MIN,
-                EnvironmentalCalculations.OPTIMAL_TEMP_MAX,
+                tempMin,
+                tempMax,
                 "°C");
 
         EnvironmentalTrendsResponse.ParameterStats humidityStats = calculateParameterStats(
                 humidities,
-                EnvironmentalCalculations.OPTIMAL_HUMIDITY_MIN,
-                EnvironmentalCalculations.OPTIMAL_HUMIDITY_MAX,
+                humidityMin,
+                humidityMax,
                 "%");
 
         EnvironmentalTrendsResponse.ParameterStats vpdStats = calculateParameterStats(
@@ -375,8 +403,15 @@ public class AnalyticsService {
                 (double) EnvironmentalCalculations.OPTIMAL_LIGHT_MAX,
                 "PPFD");
 
-        // Calculate days out of range (based on daily aggregated data)
-        int daysOutOfRange = calculateDaysOutOfRange(dataPoints);
+        // Calculate soil moisture stats (optimal range 10-50 kPa for most plants)
+        EnvironmentalTrendsResponse.ParameterStats soilMoistureStats = calculateParameterStats(
+                soilMoistureValues,
+                10.0,  // Optimal min
+                50.0,  // Optimal max
+                "kPa");
+
+        // Calculate days out of range (based on raw snapshots, not aggregated data)
+        int daysOutOfRange = calculateDaysOutOfRange(snapshots, tempMin, tempMax, humidityMin, humidityMax);
 
         // Calculate overall stability score (weighted average of all parameter variances)
         Double stabilityScore = calculateOverallStability(tempStats, humidityStats, vpdStats);
@@ -387,6 +422,7 @@ public class AnalyticsService {
                 .vpd(vpdStats)
                 .co2(co2Stats)
                 .light(lightStats)
+                .soilMoisture(soilMoistureStats)
                 .daysOutOfRange(daysOutOfRange)
                 .stabilityScore(stabilityScore)
                 .build();
@@ -433,27 +469,48 @@ public class AnalyticsService {
     }
 
     /**
-     * Calculates the number of days where environmental conditions were out of optimal range.
+     * Calculates the number of unique calendar days where environmental conditions were out of optimal range.
+     * Uses grow-specific target values for temperature and humidity, with fallbacks to hardcoded defaults.
+     * This metric counts unique days based on raw snapshots, not aggregated data, ensuring consistency
+     * regardless of the aggregation level used for visualization.
      *
-     * @param dataPoints the daily aggregated data points
-     * @return count of days out of range
+     * @param snapshots   the raw environmental snapshots
+     * @param tempMin     the minimum optimal temperature (from grow or default)
+     * @param tempMax     the maximum optimal temperature (from grow or default)
+     * @param humidityMin the minimum optimal humidity (from grow or default)
+     * @param humidityMax the maximum optimal humidity (from grow or default)
+     * @return count of unique days out of range
      */
-    private int calculateDaysOutOfRange(List<EnvironmentalTrendsResponse.DataPoint> dataPoints) {
-        return (int) dataPoints.stream()
-                .filter(dp -> {
-                    // Check if any parameter is out of optimal range
-                    boolean tempOutOfRange = dp.getTemperature() != null &&
-                            !EnvironmentalCalculations.isTemperatureOptimal(dp.getTemperature());
+    private int calculateDaysOutOfRange(
+            List<EnvironmentalSnapshot> snapshots,
+            double tempMin,
+            double tempMax,
+            double humidityMin,
+            double humidityMax) {
 
-                    boolean humidityOutOfRange = dp.getHumidity() != null &&
-                            !EnvironmentalCalculations.isHumidityOptimal(dp.getHumidity());
+        // Collect unique dates (LocalDate) where any parameter was out of range
+        Set<LocalDate> daysOutOfRange = snapshots.stream()
+                .filter(snapshot -> {
+                    // Extract values
+                    Double temp = snapshot.getTemperature() != null ? snapshot.getTemperature().doubleValue() : null;
+                    Double humidity = snapshot.getHumidity() != null ? snapshot.getHumidity().doubleValue() : null;
+                    Double vpd = snapshot.getVpd() != null ? snapshot.getVpd().doubleValue() : null;
 
-                    boolean vpdOutOfRange = dp.getVpd() != null &&
-                            !EnvironmentalCalculations.isVpdOptimal(dp.getVpd());
+                    // Check if temperature is out of grow-specific optimal range
+                    boolean tempOutOfRange = temp != null && (temp < tempMin || temp > tempMax);
+
+                    // Check if humidity is out of grow-specific optimal range
+                    boolean humidityOutOfRange = humidity != null && (humidity < humidityMin || humidity > humidityMax);
+
+                    // VPD uses standard optimal range (not grow-specific)
+                    boolean vpdOutOfRange = vpd != null && !EnvironmentalCalculations.isVpdOptimal(vpd);
 
                     return tempOutOfRange || humidityOutOfRange || vpdOutOfRange;
                 })
-                .count();
+                .map(snapshot -> snapshot.getTimestamp().toLocalDate()) // Extract unique dates
+                .collect(Collectors.toSet()); // Use Set to ensure uniqueness
+
+        return daysOutOfRange.size();
     }
 
     /**
@@ -568,6 +625,7 @@ public class AnalyticsService {
         List<Double> vpds = extractValues(snapshots, s -> s.getVpd());
         List<Double> co2Values = extractValues(snapshots, s -> s.getCo2());
         List<Integer> lightValues = extractIntegerValues(snapshots, s -> s.getLightIntensity());
+        List<Double> soilMoistureValues = extractValues(snapshots, s -> s.getSoilMoisture());
 
         return EnvironmentalTrendsResponse.StageAverages.builder()
                 .avgTemperature(calculateAverage(temperatures))
@@ -575,6 +633,7 @@ public class AnalyticsService {
                 .avgVpd(calculateAverage(vpds))
                 .avgCo2(calculateAverage(co2Values))
                 .avgLight(calculateAverageInteger(lightValues))
+                .avgSoilMoisture(calculateAverage(soilMoistureValues))
                 .dataPointCount((long) snapshots.size())
                 .build();
     }
@@ -1462,6 +1521,27 @@ public class AnalyticsService {
         Double avgYieldPerGrow = uniqueGrows > 0 ? totalYield / uniqueGrows : null;
         Double avgYieldPerCultivar = uniqueCultivars > 0 ? totalYield / uniqueCultivars : null;
 
+        // Calculate hash yield metrics
+        double totalHashYield = harvests.stream()
+                .filter(h -> h.getHashYield() != null)
+                .mapToDouble(h -> h.getHashYield().doubleValue())
+                .sum();
+
+        Double avgHashYieldPerPlant = totalPlantsHarvested > 0 && totalHashYield > 0
+                ? totalHashYield / totalPlantsHarvested
+                : null;
+
+        // Calculate average hash yield percentage (hash yield / wet weight * 100)
+        Double avgHashYieldPercentage = harvests.stream()
+                .filter(h -> h.getHashYield() != null && h.getWetWeight() != null && h.getWetWeight().doubleValue() > 0)
+                .mapToDouble(h -> (h.getHashYield().doubleValue() / h.getWetWeight().doubleValue()) * 100)
+                .average()
+                .orElse(0.0);
+
+        if (avgHashYieldPercentage != null && avgHashYieldPercentage == 0.0) {
+            avgHashYieldPercentage = null;
+        }
+
         return YieldAnalyticsResponse.YieldMetrics.builder()
                 .totalYield(totalYield)
                 .avgYieldPerPlant(avgYieldPerPlant)
@@ -1470,6 +1550,9 @@ public class AnalyticsService {
                 .avgWetWeight(avgWetWeight > 0 ? avgWetWeight : null)
                 .avgDryWeight(avgDryWeight > 0 ? avgDryWeight : null)
                 .avgWetToDryRatio(avgWetToDryRatio)
+                .totalHashYield(totalHashYield > 0 ? totalHashYield : null)
+                .avgHashYieldPerPlant(avgHashYieldPerPlant)
+                .avgHashYieldPercentage(avgHashYieldPercentage)
                 .totalHarvests(harvests.size())
                 .totalPlantsHarvested(totalPlantsHarvested)
                 .build();
@@ -1734,11 +1817,27 @@ public class AnalyticsService {
 
         // Add feeding events
         for (FeedingEvent fe : feedingEvents) {
+            // Parse amendments from JSON string
+            List<AmendmentDTO> amendments = null;
+            if (fe.getAmendments() != null && !fe.getAmendments().isEmpty()) {
+                try {
+                    amendments = objectMapper.readValue(
+                            fe.getAmendments(),
+                            new TypeReference<List<AmendmentDTO>>() {}
+                    );
+                } catch (Exception e) {
+                    logger.warn("Failed to parse amendments for feeding event {}: {}",
+                            fe.getId(), e.getMessage());
+                    amendments = List.of();
+                }
+            }
+
             TimelineEventResponse.EventDetails details = TimelineEventResponse.EventDetails.builder()
                     .ec(fe.getEcLevel() != null ? fe.getEcLevel().doubleValue() : null)
                     .ph(fe.getPhLevel() != null ? fe.getPhLevel().doubleValue() : null)
                     .waterVolume(fe.getAmountMl().doubleValue())
                     .nutrients(fe.getNutrientMix() != null ? List.of(fe.getNutrientMix()) : List.of())
+                    .amendments(amendments)
                     .build();
 
             events.add(TimelineEventResponse.TimelineEvent.builder()

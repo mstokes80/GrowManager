@@ -31,6 +31,7 @@ public class EnvironmentalSnapshotResponse {
     private BigDecimal co2;
     private BigDecimal lightIntensity;
     private BigDecimal vpd;
+    private BigDecimal soilMoisture;
     private String source;
     private String notes;
     private LocalDateTime createdAt;
@@ -53,6 +54,7 @@ public class EnvironmentalSnapshotResponse {
                 .co2(snapshot.getCo2())
                 .lightIntensity(snapshot.getLightIntensity())
                 .vpd(snapshot.getVpd())
+                .soilMoisture(snapshot.getSoilMoisture())
                 .source(snapshot.getSource().toString())
                 .notes(snapshot.getNotes())
                 .createdAt(snapshot.getCreatedAt())

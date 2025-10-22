@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +16,7 @@ import {
 } from '@/components/ui/select';
 import { AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import type { ActivityLog } from '@/types/activityLog';
 
 // Validation schema using Zod
 const activitySchema = z.object({
@@ -34,6 +36,7 @@ export type LogActivityFormData = z.infer<typeof activitySchema>;
 
 interface LogActivityFormProps {
   plantId: string;
+  initialData?: ActivityLog;
   onSubmit: (data: LogActivityFormData) => void;
   onCancel?: () => void;
   isSubmitting?: boolean;
@@ -41,20 +44,25 @@ interface LogActivityFormProps {
 
 /**
  * LogActivityForm - Form for logging training/maintenance activities
+ * Supports both creating new activities and editing existing ones
  * Implements Task Group 6.4.6
  */
 export function LogActivityForm({
   // plantId is passed for potential future use in the form
   plantId: _plantId,
+  initialData,
   onSubmit,
   onCancel,
   isSubmitting = false,
 }: LogActivityFormProps) {
+  const isEditMode = !!initialData;
+
   const {
     register,
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<LogActivityFormData>({
     resolver: zodResolver(activitySchema),
@@ -67,6 +75,19 @@ export function LogActivityForm({
     },
   });
 
+  // Populate form when editing
+  useEffect(() => {
+    if (initialData) {
+      reset({
+        activityType: initialData.activityType,
+        description: initialData.description,
+        notes: initialData.notes || '',
+        loggedAt: format(new Date(initialData.loggedAt), "yyyy-MM-dd'T'HH:mm"),
+        applyToAllPlants: false,
+      });
+    }
+  }, [initialData, reset]);
+
   const selectedActivityType = watch('activityType');
   const applyToAllPlants = watch('applyToAllPlants');
 
@@ -78,6 +99,7 @@ export function LogActivityForm({
           Activity Type <span className="text-destructive">*</span>
         </Label>
         <Select
+          key={`activityType-${selectedActivityType}`}
           value={selectedActivityType}
           onValueChange={(value) => setValue('activityType', value as any)}
         >
@@ -145,20 +167,22 @@ export function LogActivityForm({
         )}
       </div>
 
-      {/* Apply to All Plants Checkbox */}
-      <div className="flex items-start space-x-3 rounded-md border p-4 bg-muted/50">
-        <div className="flex-1">
-          <Checkbox
-            id="applyToAllPlants"
-            checked={!!applyToAllPlants}
-            onChange={(e) => setValue('applyToAllPlants', e.target.checked)}
-            label="Apply to all plants in this grow"
-          />
-          <p className="text-sm text-muted-foreground mt-2 ml-13">
-            This will create the same activity log for all plants in the current grow cycle
-          </p>
+      {/* Apply to All Plants Checkbox - Only show when creating, not editing */}
+      {!isEditMode && (
+        <div className="flex items-start space-x-3 rounded-md border p-4 bg-muted/50">
+          <div className="flex-1">
+            <Checkbox
+              id="applyToAllPlants"
+              checked={!!applyToAllPlants}
+              onChange={(e) => setValue('applyToAllPlants', e.target.checked)}
+              label="Apply to all plants in this grow"
+            />
+            <p className="text-sm text-muted-foreground mt-2 ml-13">
+              This will create the same activity log for all plants in the current grow cycle
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Notes Field */}
       <div className="space-y-2">
@@ -188,7 +212,10 @@ export function LogActivityForm({
           </Button>
         )}
         <Button type="submit" disabled={isSubmitting} className="flex-1">
-          {isSubmitting ? 'Logging...' : 'Log Activity'}
+          {isSubmitting
+            ? (isEditMode ? 'Updating...' : 'Logging...')
+            : (isEditMode ? 'Update Activity' : 'Log Activity')
+          }
         </Button>
       </div>
     </form>

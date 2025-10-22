@@ -1,18 +1,21 @@
 import { FeedingEvent } from '@/types/feedingEvent';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Droplets, Leaf, Beaker } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Droplets, Leaf, Beaker, Edit2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface FeedingEventItemProps {
   event: FeedingEvent;
+  onEdit?: (event: FeedingEvent) => void;
+  onDelete?: (event: FeedingEvent) => void;
 }
 
 /**
  * FeedingEventItem displays a single feeding event in the timeline
  * Shows feeding type, amount, EC/pH levels, and timestamp
  */
-export function FeedingEventItem({ event }: FeedingEventItemProps) {
+export function FeedingEventItem({ event, onEdit, onDelete }: FeedingEventItemProps) {
   const getFeedingIcon = (type: FeedingEvent['feedingType']) => {
     switch (type) {
       case 'watering':
@@ -64,9 +67,37 @@ export function FeedingEventItem({ event }: FeedingEventItemProps) {
                   <span className="text-sm font-medium">{event.amountMl} ml</span>
                 </div>
               </div>
-              <time className="text-xs text-muted-foreground whitespace-nowrap">
-                {formatTimestamp(event.fedAt)}
-              </time>
+              <div className="flex items-center gap-2">
+                <time className="text-xs text-muted-foreground whitespace-nowrap">
+                  {formatTimestamp(event.fedAt)}
+                </time>
+                {(onEdit || onDelete) && (
+                  <div className="flex items-center gap-1">
+                    {onEdit && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => onEdit(event)}
+                        aria-label="Edit feeding event"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {onDelete && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => onDelete(event)}
+                        aria-label="Delete feeding event"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* EC and pH levels */}

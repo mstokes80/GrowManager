@@ -12,6 +12,10 @@ interface ActivityTimelineProps {
   feedingEvents: FeedingEvent[];
   activityLogs: ActivityLog[];
   isLoading?: boolean;
+  onEditFeedingEvent?: (event: FeedingEvent) => void;
+  onDeleteFeedingEvent?: (event: FeedingEvent) => void;
+  onEditActivityLog?: (log: ActivityLog) => void;
+  onDeleteActivityLog?: (log: ActivityLog) => void;
 }
 
 type TimelineItem =
@@ -27,6 +31,10 @@ export function ActivityTimeline({
   feedingEvents,
   activityLogs,
   isLoading = false,
+  onEditFeedingEvent,
+  onDeleteFeedingEvent,
+  onEditActivityLog,
+  onDeleteActivityLog,
 }: ActivityTimelineProps) {
   const [visibleCount, setVisibleCount] = useState(20);
 
@@ -123,9 +131,17 @@ export function ActivityTimeline({
             {group.items.map((item, itemIndex) => (
               <div key={itemIndex}>
                 {item.type === 'feeding' ? (
-                  <FeedingEventItem event={item.data} />
+                  <FeedingEventItem
+                    event={item.data}
+                    onEdit={onEditFeedingEvent}
+                    onDelete={onDeleteFeedingEvent}
+                  />
                 ) : (
-                  <ActivityLogItem log={item.data} />
+                  <ActivityLogItem
+                    log={item.data}
+                    onEdit={onEditActivityLog}
+                    onDelete={onDeleteActivityLog}
+                  />
                 )}
               </div>
             ))}

@@ -81,6 +81,7 @@ export function EnvironmentTab({ growId }: EnvironmentTabProps) {
           humidity: data.humidity,
           co2: data.co2,
           lightIntensity: data.lightIntensity,
+          soilMoisture: data.soilMoisture,
           notes: data.notes,
         },
       });

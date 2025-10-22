@@ -3,7 +3,7 @@
  * Provides formatting, colors, tooltips, and CSV export functionality
  */
 
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 /**
  * Chart color palette - matches Tailwind colors for consistency
@@ -70,12 +70,13 @@ export function formatPercent(
 
 /**
  * Format a date for chart display
+ * Uses parseISO for strings to avoid timezone issues with date-only strings
  */
 export function formatChartDate(
   date: Date | string,
   formatStr: string = 'MMM d'
 ): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const dateObj = typeof date === 'string' ? parseISO(date) : date;
   return format(dateObj, formatStr);
 }
 

@@ -13,6 +13,7 @@ export interface Harvest {
   harvestDate: string; // ISO date string
   wetWeight: number;
   dryWeight: number | null;
+  hashYield: number | null;
   weightUnit: WeightUnit;
   thcPercent: number | null;
   cbdPercent: number | null;
@@ -27,6 +28,7 @@ export interface CreateHarvestRequest {
   harvestDate: string; // ISO date string
   wetWeight: number;
   dryWeight?: number;
+  hashYield?: number;
   weightUnit: WeightUnit;
   thcPercent?: number;
   cbdPercent?: number;
@@ -36,18 +38,20 @@ export interface CreateHarvestRequest {
 }
 
 export interface UpdateHarvestRequest {
-  dryWeight?: number;
-  thcPercent?: number;
-  cbdPercent?: number;
-  terpeneProfile?: string;
-  qualityRating?: number; // 1-10
-  notes?: string;
+  dryWeight?: number | null;
+  hashYield?: number | null;
+  thcPercent?: number | null;
+  cbdPercent?: number | null;
+  terpeneProfile?: string | null;
+  qualityRating?: number | null; // 1-10
+  notes?: string | null;
 }
 
 export interface HarvestSummary {
   totalPlantsHarvested: number;
   totalWetWeight: number;
   totalDryWeight: number;
+  totalHashYield: number;
   averageQuality: number;
   harvests: Harvest[];
 }

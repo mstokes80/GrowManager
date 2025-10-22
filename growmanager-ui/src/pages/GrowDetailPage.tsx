@@ -95,6 +95,11 @@ export default function GrowDetailPage() {
         ? data.tags.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0)
         : undefined;
 
+      // Transform microbe inoculants from comma-separated string to array
+      const microbeInoculants = data.microbeInoculants
+        ? data.microbeInoculants.split(',').map((item) => item.trim()).filter((item) => item.length > 0)
+        : undefined;
+
       await updateGrowMutation.mutateAsync({
         id,
         data: {
@@ -110,7 +115,24 @@ export default function GrowDetailPage() {
           targetHumidityMin: data.targetHumidityMin || undefined,
           targetHumidityMax: data.targetHumidityMax || undefined,
           expectedHarvestDate: data.expectedHarvestDate || undefined,
+          canopySquareFt: data.canopySquareFt || undefined,
+          vegetativeDate: data.vegetativeDate || undefined,
+          flowerDate: data.flowerDate || undefined,
+          lights: data.lights && data.lights.length > 0 ? data.lights : undefined,
+          tempUom: data.tempUom || undefined,
           tags,
+          // Organic growing fields
+          isOrganic: data.isOrganic,
+          soilSource: data.soilSource || undefined,
+          soilTexture: data.soilTexture || undefined,
+          organicMatterPercent: data.organicMatterPercent || undefined,
+          baseNutrientProfile: data.baseNutrientProfile || undefined,
+          soilReusedCycles: data.soilReusedCycles || undefined,
+          mycorrhizaeAdded: data.mycorrhizaeAdded,
+          microbeInoculants,
+          coverCropType: data.coverCropType || undefined,
+          mulchType: data.mulchType || undefined,
+          compostReused: data.compostReused,
         },
       });
 
@@ -278,6 +300,40 @@ export default function GrowDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Planning Card */}
+      {(grow.canopySquareFt !== undefined || grow.vegetativeDate || grow.flowerDate) && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Calendar className="h-6 w-6 text-blue-600" />
+              <CardTitle>Planning</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {grow.canopySquareFt !== undefined && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Canopy Size</p>
+                <p>{grow.canopySquareFt} sq ft</p>
+              </div>
+            )}
+
+            {grow.vegetativeDate && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Vegetative Phase Start</p>
+                <p>{formatDate(grow.vegetativeDate)}</p>
+              </div>
+            )}
+
+            {grow.flowerDate && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Flowering Phase Start</p>
+                <p>{formatDate(grow.flowerDate)}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Environment Setup Card */}
       <Card>
         <CardHeader>
@@ -295,6 +351,20 @@ export default function GrowDetailPage() {
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Lighting Type</p>
               <p className="capitalize">{grow.lightingType}</p>
+            </div>
+          )}
+
+          {grow.lights && grow.lights.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Light Equipment</p>
+              <div className="space-y-2 mt-2">
+                {grow.lights.map((light, index) => (
+                  <div key={index} className="flex justify-between items-center p-2 border rounded-md bg-muted/30">
+                    <span className="font-medium">{light.name}</span>
+                    <span className="text-sm text-muted-foreground">{light.wattage}W</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -326,9 +396,9 @@ export default function GrowDetailPage() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Temperature Range</p>
                 <p>
-                  {grow.targetTempMin !== undefined ? `${grow.targetTempMin}°C` : '—'}
+                  {grow.targetTempMin !== undefined ? `${grow.targetTempMin}°${grow.tempUom || 'C'}` : '—'}
                   {' to '}
-                  {grow.targetTempMax !== undefined ? `${grow.targetTempMax}°C` : '—'}
+                  {grow.targetTempMax !== undefined ? `${grow.targetTempMax}°${grow.tempUom || 'C'}` : '—'}
                 </p>
               </div>
             )}
@@ -341,6 +411,116 @@ export default function GrowDetailPage() {
                   {' to '}
                   {grow.targetHumidityMax !== undefined ? `${grow.targetHumidityMax}%` : '—'}
                 </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Organic Growing Card */}
+      {grow.isOrganic && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CardTitle>Organic Growing</CardTitle>
+              <Badge variant="success" className="ml-2">Organic</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Soil Characteristics */}
+            {(grow.soilSource || grow.soilTexture || grow.organicMatterPercent !== undefined || grow.baseNutrientProfile) && (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-muted-foreground">Soil Characteristics</p>
+
+                {grow.soilSource && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Soil Source</p>
+                    <p>{grow.soilSource}</p>
+                  </div>
+                )}
+
+                {grow.soilTexture && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Soil Texture</p>
+                    <p className="capitalize">{grow.soilTexture}</p>
+                  </div>
+                )}
+
+                {grow.organicMatterPercent !== undefined && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Organic Matter</p>
+                    <p>{grow.organicMatterPercent}%</p>
+                  </div>
+                )}
+
+                {grow.baseNutrientProfile && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Base Nutrient Profile</p>
+                    <p>{grow.baseNutrientProfile}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Soil Reuse */}
+            {grow.soilReusedCycles !== undefined && grow.soilReusedCycles > 0 && (
+              <div>
+                <p className="text-sm font-semibold text-muted-foreground mb-1">Soil Reuse</p>
+                <p>{grow.soilReusedCycles} {grow.soilReusedCycles === 1 ? 'cycle' : 'cycles'}</p>
+              </div>
+            )}
+
+            {/* Beneficial Biology */}
+            {(grow.mycorrhizaeAdded || (grow.microbeInoculants && grow.microbeInoculants.length > 0)) && (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-muted-foreground">Beneficial Biology</p>
+
+                {grow.mycorrhizaeAdded && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">Mycorrhizae Added</Badge>
+                  </div>
+                )}
+
+                {grow.microbeInoculants && grow.microbeInoculants.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Microbe Inoculants</p>
+                    <div className="flex flex-wrap gap-2">
+                      {grow.microbeInoculants.map((inoculant, index) => (
+                        <Badge key={index} variant="secondary">
+                          {inoculant}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Cover Crops & Mulching */}
+            {(grow.coverCropType || grow.mulchType) && (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-muted-foreground">Cover Crops & Mulching</p>
+
+                {grow.coverCropType && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Cover Crop</p>
+                    <p className="capitalize">{grow.coverCropType}</p>
+                  </div>
+                )}
+
+                {grow.mulchType && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Mulch Type</p>
+                    <p className="capitalize">{grow.mulchType}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Compost Reuse */}
+            {grow.compostReused && (
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">Compost Reused</Badge>
               </div>
             )}
           </CardContent>

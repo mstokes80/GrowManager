@@ -51,6 +51,7 @@ public class EnvironmentalTrendsResponse {
         private Double vpd; // Vapor Pressure Deficit
         private Double co2;
         private Integer light;
+        private Double soilMoisture; // Soil moisture in kPa
         private String aggregationLevel; // "hourly", "daily", "weekly", "monthly"
     }
 
@@ -67,6 +68,7 @@ public class EnvironmentalTrendsResponse {
         private ParameterStats vpd;
         private ParameterStats co2;
         private ParameterStats light;
+        private ParameterStats soilMoisture;
         private Integer daysOutOfRange;
         private Double stabilityScore; // 0-100, based on variance
     }
@@ -125,6 +127,7 @@ public class EnvironmentalTrendsResponse {
         private Double avgVpd;
         private Double avgCo2;
         private Integer avgLight;
+        private Double avgSoilMoisture;
         private Long dataPointCount;
     }
 }

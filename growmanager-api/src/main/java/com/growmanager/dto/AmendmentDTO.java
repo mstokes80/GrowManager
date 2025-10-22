@@ -34,4 +34,10 @@ public class AmendmentDTO {
         message = "Unit must be one of: teaspoons, tablespoons, cups, grams, kilograms, ounces, pounds, milliliters, liters"
     )
     private String unit;
+
+    @Pattern(
+        regexp = "^(top_dress|tea|ferment|foliar)$",
+        message = "Application type must be one of: top_dress, tea, ferment, foliar"
+    )
+    private String applicationType;
 }

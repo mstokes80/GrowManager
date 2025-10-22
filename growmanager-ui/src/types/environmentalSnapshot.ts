@@ -15,6 +15,7 @@ export interface EnvironmentalSnapshot {
   co2?: number; // PPM
   lightIntensity?: number; // PPFD
   vpd?: number; // kPa (Vapor Pressure Deficit)
+  soilMoisture?: number; // kPa (Soil moisture tension)
   source: DataSource;
   notes?: string;
   createdAt: string;
@@ -27,6 +28,7 @@ export interface CreateEnvironmentalSnapshotRequest {
   humidity?: number;
   co2?: number;
   lightIntensity?: number;
+  soilMoisture?: number;
   notes?: string;
 }
 

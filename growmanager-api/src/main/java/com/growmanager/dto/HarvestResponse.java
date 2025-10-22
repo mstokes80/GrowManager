@@ -29,6 +29,7 @@ public class HarvestResponse {
     private LocalDate harvestDate;
     private BigDecimal wetWeight;
     private BigDecimal dryWeight;
+    private BigDecimal hashYield;
     private WeightUnit weightUnit;
     private BigDecimal thcPercent;
     private BigDecimal cbdPercent;
@@ -56,6 +57,7 @@ public class HarvestResponse {
                 .harvestDate(harvest.getHarvestDate())
                 .wetWeight(harvest.getWetWeight())
                 .dryWeight(harvest.getDryWeight())
+                .hashYield(harvest.getHashYield())
                 .weightUnit(harvest.getWeightUnit())
                 .thcPercent(harvest.getThcPercent())
                 .cbdPercent(harvest.getCbdPercent())

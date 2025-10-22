@@ -99,21 +99,23 @@ export default function FeedingAnalyticsPage() {
   const feedingTimelineData = useMemo(() => {
     if (!data?.feedingTimeline) return [];
 
-    return data.feedingTimeline.map((event) => ({
-      timestamp: event.timestamp,
-      date: formatChartDate(event.timestamp),
-      waterVolume: event.waterVolume,
-      feedingType: event.feedingType,
-      ec: event.ec ?? undefined,
-      ph: event.ph ?? undefined,
-      plantTag: event.plantTag,
-      nutrients: event.nutrients.join(', ') || 'None',
-      // Separate volume by feeding type for stacked bars
-      nutrientsVolume: event.feedingType === 'nutrients' ? event.waterVolume : 0,
-      wateringVolume: event.feedingType === 'watering' ? event.waterVolume : 0,
-      supplementVolume: event.feedingType === 'supplement' ? event.waterVolume : 0,
-      flushVolume: event.feedingType === 'flush' ? event.waterVolume : 0,
-    }));
+    return data.feedingTimeline
+      .map((event) => ({
+        timestamp: event.timestamp,
+        date: formatChartDate(event.timestamp),
+        waterVolume: event.waterVolume,
+        feedingType: event.feedingType,
+        ec: event.ec ?? undefined,
+        ph: event.ph ?? undefined,
+        plantTag: event.plantTag,
+        nutrients: event.nutrients.join(', ') || 'None',
+        // Separate volume by feeding type for stacked bars
+        nutrientsVolume: event.feedingType === 'nutrients' ? event.waterVolume : 0,
+        wateringVolume: event.feedingType === 'watering' ? event.waterVolume : 0,
+        supplementVolume: event.feedingType === 'supplement' ? event.waterVolume : 0,
+        flushVolume: event.feedingType === 'flush' ? event.waterVolume : 0,
+      }))
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }, [data?.feedingTimeline]);
 
   // Format pH/EC trend data from individual feeding events

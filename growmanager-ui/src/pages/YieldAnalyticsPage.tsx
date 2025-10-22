@@ -272,6 +272,38 @@ export default function YieldAnalyticsPage() {
               />
             </div>
 
+            {/* Hash Yield Metrics - Row 3 (conditional) */}
+            {data.yieldMetrics.totalHashYield && data.yieldMetrics.totalHashYield > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Total Hash Yield */}
+                <MetricCard
+                  title="Total Hash Yield"
+                  value={formatWeight(data.yieldMetrics.totalHashYield)}
+                  description="Total hash produced from fresh frozen"
+                  icon={<Award className="h-4 w-4" />}
+                  variant="success"
+                />
+
+                {/* Average Hash Yield Per Plant */}
+                <MetricCard
+                  title="Avg Hash Per Plant"
+                  value={formatWeight(data.yieldMetrics.avgHashYieldPerPlant)}
+                  description="Average hash yield per plant"
+                  icon={<Leaf className="h-4 w-4" />}
+                  variant="info"
+                />
+
+                {/* Average Hash Yield Percentage */}
+                <MetricCard
+                  title="Hash Yield %"
+                  value={`${formatPercent(data.yieldMetrics.avgHashYieldPercentage, 2)}`}
+                  description="Hash as % of wet weight"
+                  icon={<Target className="h-4 w-4" />}
+                  variant="info"
+                />
+              </div>
+            )}
+
             {/* Production Efficiency Metrics - Row 3 */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Average Days to Harvest */}
