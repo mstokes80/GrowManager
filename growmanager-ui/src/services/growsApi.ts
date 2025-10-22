@@ -9,6 +9,11 @@ import { api } from '@/lib/api-client';
 export type LightingType = 'led' | 'hps' | 'mh' | 'cmh' | 'fluorescent' | 'natural';
 export type MediumType = 'soil' | 'coco' | 'hydro' | 'aeroponics' | 'aquaponics';
 
+export interface LightEquipment {
+  name: string;
+  wattage: number;
+}
+
 export interface Grow {
   id: string;
   userId: string;
@@ -26,10 +31,27 @@ export interface Grow {
   targetHumidityMin?: number;
   targetHumidityMax?: number;
   expectedHarvestDate?: string;
+  canopySquareFt?: number;
+  vegetativeDate?: string;
+  flowerDate?: string;
+  lights?: LightEquipment[];
+  tempUom?: string;
   tags?: string[];
   isArchived: boolean;
   sortOrder: number;
   plantCount?: number;
+  // Organic growing fields
+  isOrganic?: boolean;
+  soilSource?: string;
+  soilTexture?: string;
+  organicMatterPercent?: number;
+  baseNutrientProfile?: string;
+  soilReusedCycles?: number;
+  mycorrhizaeAdded?: boolean;
+  microbeInoculants?: string[];
+  coverCropType?: string;
+  mulchType?: string;
+  compostReused?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,7 +69,24 @@ export interface CreateGrowRequest {
   targetHumidityMin?: number;
   targetHumidityMax?: number;
   expectedHarvestDate?: string;
+  canopySquareFt?: number;
+  vegetativeDate?: string;
+  flowerDate?: string;
+  lights?: LightEquipment[];
+  tempUom?: string;
   tags?: string[];
+  // Organic growing fields
+  isOrganic?: boolean;
+  soilSource?: string;
+  soilTexture?: string;
+  organicMatterPercent?: number;
+  baseNutrientProfile?: string;
+  soilReusedCycles?: number;
+  mycorrhizaeAdded?: boolean;
+  microbeInoculants?: string[];
+  coverCropType?: string;
+  mulchType?: string;
+  compostReused?: boolean;
 }
 
 export interface UpdateGrowRequest {
@@ -64,7 +103,24 @@ export interface UpdateGrowRequest {
   targetHumidityMin?: number;
   targetHumidityMax?: number;
   expectedHarvestDate?: string;
+  canopySquareFt?: number;
+  vegetativeDate?: string;
+  flowerDate?: string;
+  lights?: LightEquipment[];
+  tempUom?: string;
   tags?: string[];
+  // Organic growing fields
+  isOrganic?: boolean;
+  soilSource?: string;
+  soilTexture?: string;
+  organicMatterPercent?: number;
+  baseNutrientProfile?: string;
+  soilReusedCycles?: number;
+  mycorrhizaeAdded?: boolean;
+  microbeInoculants?: string[];
+  coverCropType?: string;
+  mulchType?: string;
+  compostReused?: boolean;
 }
 
 /**

@@ -74,6 +74,11 @@ export default function GrowsListPage() {
         ? data.tags.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0)
         : undefined;
 
+      // Transform microbe inoculants from comma-separated string to array
+      const microbeInoculants = data.microbeInoculants
+        ? data.microbeInoculants.split(',').map((item) => item.trim()).filter((item) => item.length > 0)
+        : undefined;
+
       const newGrow = await createGrowMutation.mutateAsync({
         name: data.name,
         startDate: data.startDate,
@@ -87,7 +92,24 @@ export default function GrowsListPage() {
         targetHumidityMin: data.targetHumidityMin || undefined,
         targetHumidityMax: data.targetHumidityMax || undefined,
         expectedHarvestDate: data.expectedHarvestDate || undefined,
+        canopySquareFt: data.canopySquareFt || undefined,
+        vegetativeDate: data.vegetativeDate || undefined,
+        flowerDate: data.flowerDate || undefined,
+        lights: data.lights && data.lights.length > 0 ? data.lights : undefined,
+        tempUom: data.tempUom || undefined,
         tags,
+        // Organic growing fields
+        isOrganic: data.isOrganic,
+        soilSource: data.soilSource || undefined,
+        soilTexture: data.soilTexture || undefined,
+        organicMatterPercent: data.organicMatterPercent || undefined,
+        baseNutrientProfile: data.baseNutrientProfile || undefined,
+        soilReusedCycles: data.soilReusedCycles || undefined,
+        mycorrhizaeAdded: data.mycorrhizaeAdded,
+        microbeInoculants,
+        coverCropType: data.coverCropType || undefined,
+        mulchType: data.mulchType || undefined,
+        compostReused: data.compostReused,
       });
 
       toast({

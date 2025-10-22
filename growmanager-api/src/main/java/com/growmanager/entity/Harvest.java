@@ -64,6 +64,10 @@ public class Harvest {
     @Column(name = "dry_weight", precision = 8, scale = 2)
     private BigDecimal dryWeight;
 
+    @DecimalMin(value = "0.01", message = "Hash yield must be greater than 0")
+    @Column(name = "hash_yield", precision = 8, scale = 2)
+    private BigDecimal hashYield;
+
     @NotNull(message = "Weight unit is required")
     @Enumerated(EnumType.STRING)
     @Column(name = "weight_unit", nullable = false, length = 10)

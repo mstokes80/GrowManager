@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +16,15 @@ import {
 } from '@/components/ui/select';
 import { AlertCircle, Droplets, Leaf, Beaker, Plus, X } from 'lucide-react';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import {
+  type VolumeUnit,
+  getVolumeConversion,
+  validateVolume,
+  toMilliliters,
+  fromMilliliters,
+} from '@/utils/volumeUtils';
+import type { FeedingEvent } from '@/types/feedingEvent';
 
 // Amendment validation schema
 const amendmentSchema = z.object({
@@ -38,6 +48,12 @@ const amendmentSchema = z.object({
       errorMap: () => ({ message: 'Please select a valid unit' }),
     }
   ),
+  applicationType: z.enum(
+    ['top_dress', 'tea', 'ferment', 'foliar'],
+    {
+      errorMap: () => ({ message: 'Please select an application type' }),
+    }
+  ).optional(),
 });
 
 // Validation schema using Zod
@@ -45,10 +61,10 @@ const feedingSchema = z.object({
   feedingType: z.enum(['watering', 'nutrients', 'foliar'], {
     errorMap: () => ({ message: 'Please select a feeding type' }),
   }),
-  amountMl: z
+  volumeInput: z
     .number({ invalid_type_error: 'Amount must be a number' })
     .positive('Amount must be positive')
-    .max(100000, 'Amount must be less than 100,000 ml'),
+    .optional(),
   ecLevel: z
     .union([
       z.number().min(0, 'EC must be non-negative').max(10, 'EC must be less than 10'),
@@ -76,10 +92,29 @@ const feedingSchema = z.object({
   applyToAllPlants: z.boolean().optional(),
 });
 
-export type LogFeedingFormData = z.infer<typeof feedingSchema>;
+type FormData = z.infer<typeof feedingSchema>;
+
+// Output type for the form submission (always in ml)
+export interface LogFeedingFormData {
+  feedingType: 'watering' | 'nutrients' | 'foliar';
+  amountMl: number;
+  ecLevel?: number | null;
+  phLevel?: number | null;
+  nutrientMix?: string;
+  amendments?: Array<{
+    name: string;
+    amount: number;
+    unit: string;
+    applicationType?: string;
+  }>;
+  notes?: string;
+  fedAt: string;
+  applyToAllPlants?: boolean;
+}
 
 interface LogFeedingFormProps {
   plantId: string;
+  initialData?: FeedingEvent;
   onSubmit: (data: LogFeedingFormData) => void;
   onCancel?: () => void;
   isSubmitting?: boolean;
@@ -87,26 +122,33 @@ interface LogFeedingFormProps {
 
 /**
  * LogFeedingForm - Form for logging feeding/watering events
+ * Supports both creating new events and editing existing ones
  * Implements Task Group 6.4.5
  */
 export function LogFeedingForm({
   plantId: _plantId,
+  initialData,
   onSubmit,
   onCancel,
   isSubmitting = false,
 }: LogFeedingFormProps) {
+  const isEditMode = !!initialData;
+  const [volumeUnit, setVolumeUnit] = useState<VolumeUnit>('milliliters');
+  const [previousUnit, setPreviousUnit] = useState<VolumeUnit>('milliliters');
+
   const {
     register,
     handleSubmit,
     setValue,
     watch,
     control,
+    reset,
     formState: { errors },
-  } = useForm<LogFeedingFormData>({
+  } = useForm<FormData>({
     resolver: zodResolver(feedingSchema),
     defaultValues: {
       feedingType: 'watering',
-      amountMl: undefined,
+      volumeInput: undefined,
       ecLevel: null,
       phLevel: null,
       nutrientMix: '',
@@ -117,6 +159,48 @@ export function LogFeedingForm({
     },
   });
 
+  // Populate form when editing (only run on mount or when initialData changes)
+  useEffect(() => {
+    if (initialData) {
+      const volumeInMl = initialData.amountMl;
+      const volumeInCurrentUnit = fromMilliliters(volumeInMl, volumeUnit);
+
+      reset({
+        feedingType: initialData.feedingType,
+        volumeInput: volumeInCurrentUnit,
+        ecLevel: initialData.ecLevel,
+        phLevel: initialData.phLevel,
+        nutrientMix: initialData.nutrientMix || '',
+        amendments: initialData.amendments || [],
+        notes: initialData.notes || '',
+        fedAt: format(new Date(initialData.fedAt), "yyyy-MM-dd'T'HH:mm"),
+        applyToAllPlants: false,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData]); // Only run when initialData changes, not when volumeUnit changes
+
+  // Convert volume value when unit changes (for both create and edit modes)
+  useEffect(() => {
+    if (volumeUnit !== previousUnit) {
+      const currentValue = watch('volumeInput');
+      if (currentValue !== undefined && currentValue !== null && !isNaN(currentValue)) {
+        // Convert from previous unit to ml, then from ml to new unit
+        const valueInMl = toMilliliters(currentValue, previousUnit);
+        const valueInNewUnit = fromMilliliters(valueInMl, volumeUnit);
+
+        // Round appropriately based on target unit
+        // ml should be whole numbers, gallons should have 2 decimal places
+        const roundedValue = volumeUnit === 'milliliters'
+          ? Math.round(valueInNewUnit)
+          : Math.round(valueInNewUnit * 100) / 100;
+
+        setValue('volumeInput', roundedValue);
+      }
+      setPreviousUnit(volumeUnit);
+    }
+  }, [volumeUnit, previousUnit, watch, setValue]);
+
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'amendments',
@@ -124,16 +208,42 @@ export function LogFeedingForm({
 
   const selectedFeedingType = watch('feedingType');
   const applyToAllPlants = watch('applyToAllPlants');
+  const volumeInput = watch('volumeInput');
 
+  const handleFormSubmit = (data: FormData) => {
+    // Convert volume to milliliters if needed
+    const volumeMl = data.volumeInput !== undefined
+      ? toMilliliters(data.volumeInput, volumeUnit)
+      : 0;
+
+    // Transform the data to match the expected output type
+    const submitData: LogFeedingFormData = {
+      feedingType: data.feedingType,
+      amountMl: volumeMl,
+      ecLevel: data.ecLevel,
+      phLevel: data.phLevel,
+      nutrientMix: data.nutrientMix,
+      amendments: data.amendments,
+      notes: data.notes,
+      fedAt: data.fedAt,
+      applyToAllPlants: data.applyToAllPlants,
+    };
+
+    onSubmit(submitData);
+  };
+
+  const volumeError = validateVolume(volumeInput, volumeUnit);
+  const conversionText = getVolumeConversion(volumeInput, volumeUnit);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Feeding Type Field */}
       <div className="space-y-2">
         <Label htmlFor="feedingType">
           Feeding Type <span className="text-destructive">*</span>
         </Label>
         <Select
+          key={`feedingType-${selectedFeedingType}`}
           value={selectedFeedingType}
           onValueChange={(value) => setValue('feedingType', value as any)}
         >
@@ -169,24 +279,62 @@ export function LogFeedingForm({
         )}
       </div>
 
-      {/* Amount Field */}
+      {/* Amount Field with Unit Toggle */}
       <div className="space-y-2">
-        <Label htmlFor="amountMl">
-          Amount (ml) <span className="text-destructive">*</span>
-        </Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="volumeInput">
+            Amount <span className="text-destructive">*</span>
+          </Label>
+          <div className="flex gap-1 border rounded-md p-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className={cn(
+                'h-7 px-3 text-xs',
+                volumeUnit === 'milliliters' && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+              )}
+              onClick={() => setVolumeUnit('milliliters')}
+            >
+              ml
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className={cn(
+                'h-7 px-3 text-xs',
+                volumeUnit === 'gallons' && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
+              )}
+              onClick={() => setVolumeUnit('gallons')}
+            >
+              gal
+            </Button>
+          </div>
+        </div>
         <Input
-          id="amountMl"
+          id="volumeInput"
           type="number"
-          step="0.01"
-          placeholder="e.g., 500"
-          {...register('amountMl', { valueAsNumber: true })}
-          aria-invalid={!!errors.amountMl}
-          aria-describedby={errors.amountMl ? 'amountMl-error' : undefined}
+          step={volumeUnit === 'milliliters' ? '1' : '0.01'}
+          placeholder={volumeUnit === 'milliliters' ? 'e.g., 500' : 'e.g., 0.13'}
+          {...register('volumeInput', { valueAsNumber: true })}
+          aria-invalid={!!volumeError}
+          aria-describedby={volumeError ? 'volume-error' : undefined}
         />
-        {errors.amountMl && (
-          <p id="amountMl-error" className="text-sm text-destructive flex items-center gap-1">
+        {volumeError && (
+          <p id="volume-error" className="text-sm text-destructive flex items-center gap-1">
             <AlertCircle className="h-4 w-4" />
-            {errors.amountMl.message}
+            {volumeError}
+          </p>
+        )}
+        {conversionText && !volumeError && (
+          <p className="text-xs text-muted-foreground">
+            ≈ {conversionText}
+          </p>
+        )}
+        {!volumeInput && (
+          <p className="text-xs text-muted-foreground">
+            Enter the water or solution volume
           </p>
         )}
       </div>
@@ -270,7 +418,7 @@ export function LogFeedingForm({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => append({ name: '', amount: 0, unit: 'cups' as const })}
+            onClick={() => append({ name: '', amount: 0, unit: 'cups' as const, applicationType: undefined })}
           >
             <Plus className="h-4 w-4 mr-1" />
             Add Amendment
@@ -281,8 +429,8 @@ export function LogFeedingForm({
           <div className="space-y-3">
             {fields.map((field, index) => (
               <div key={field.id} className="flex gap-2 items-start p-3 border rounded-md bg-muted/30">
-                <div className="flex-1 grid grid-cols-3 gap-2">
-                  <div className="col-span-3 sm:col-span-1">
+                <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="col-span-2 sm:col-span-1">
                     <Label htmlFor={`amendments.${index}.name`} className="text-xs">
                       Amendment Name
                     </Label>
@@ -347,6 +495,31 @@ export function LogFeedingForm({
                       </p>
                     )}
                   </div>
+
+                  <div>
+                    <Label htmlFor={`amendments.${index}.applicationType`} className="text-xs">
+                      Application Type
+                    </Label>
+                    <Select
+                      value={watch(`amendments.${index}.applicationType`) || ''}
+                      onValueChange={(value) => setValue(`amendments.${index}.applicationType`, value as any)}
+                    >
+                      <SelectTrigger id={`amendments.${index}.applicationType`} className="h-10">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="top_dress">Top Dress</SelectItem>
+                        <SelectItem value="tea">Tea</SelectItem>
+                        <SelectItem value="ferment">Ferment</SelectItem>
+                        <SelectItem value="foliar">Foliar</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.amendments?.[index]?.applicationType && (
+                      <p className="text-xs text-destructive mt-1">
+                        {errors.amendments[index]?.applicationType?.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <Button
@@ -385,20 +558,22 @@ export function LogFeedingForm({
         )}
       </div>
 
-      {/* Apply to All Plants Checkbox */}
-      <div className="flex items-start space-x-3 rounded-md border p-4 bg-muted/50">
-        <div className="flex-1">
-          <Checkbox
-            id="applyToAllPlants"
-            checked={!!applyToAllPlants}
-            onChange={(e) => setValue('applyToAllPlants', e.target.checked)}
-            label="Apply to all plants in this grow"
-          />
-          <p className="text-sm text-muted-foreground mt-2 ml-13">
-            This will create the same feeding event for all plants in the current grow cycle
-          </p>
+      {/* Apply to All Plants Checkbox - Only show when creating, not editing */}
+      {!isEditMode && (
+        <div className="flex items-start space-x-3 rounded-md border p-4 bg-muted/50">
+          <div className="flex-1">
+            <Checkbox
+              id="applyToAllPlants"
+              checked={!!applyToAllPlants}
+              onChange={(e) => setValue('applyToAllPlants', e.target.checked)}
+              label="Apply to all plants in this grow"
+            />
+            <p className="text-sm text-muted-foreground mt-2 ml-13">
+              This will create the same feeding event for all plants in the current grow cycle
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Notes Field */}
       <div className="space-y-2">
@@ -427,7 +602,10 @@ export function LogFeedingForm({
           </Button>
         )}
         <Button type="submit" disabled={isSubmitting} className="flex-1">
-          {isSubmitting ? 'Logging...' : 'Log Feeding'}
+          {isSubmitting
+            ? (isEditMode ? 'Updating...' : 'Logging...')
+            : (isEditMode ? 'Update Feeding' : 'Log Feeding')
+          }
         </Button>
       </div>
     </form>

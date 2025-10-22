@@ -16,10 +16,17 @@ export type AmendmentUnit =
   | 'milliliters'
   | 'liters';
 
+export type ApplicationType =
+  | 'top_dress'
+  | 'tea'
+  | 'ferment'
+  | 'foliar';
+
 export interface Amendment {
   name: string;
   amount: number;
   unit: AmendmentUnit;
+  applicationType?: ApplicationType;
 }
 
 export interface FeedingEvent {

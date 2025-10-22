@@ -15,6 +15,7 @@ export interface EnvironmentalSnapshot {
   co2?: number; // PPM
   lightIntensity?: number; // PPFD
   vpd?: number; // kPa (Vapor Pressure Deficit)
+  soilMoisture?: number; // kPa (Soil moisture tension)
   source: DataSource;
   notes?: string;
   createdAt: string;
@@ -27,5 +28,26 @@ export interface CreateEnvironmentalSnapshotRequest {
   humidity?: number;
   co2?: number;
   lightIntensity?: number;
+  soilMoisture?: number;
   notes?: string;
+}
+
+export interface EnvironmentalImportResponse {
+  importedCount: number;
+  skippedCount: number;
+  totalRecords: number;
+  errors: string[];
+  source: string;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }

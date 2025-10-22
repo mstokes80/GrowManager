@@ -44,13 +44,14 @@ export default function HarvestDetailPage() {
 
   const handleUpdate = async (data: UpdateHarvestFormData) => {
     try {
-      // Convert empty strings to undefined for optional numeric fields
+      // Convert empty strings to null for optional numeric fields
       const updateData = {
         ...data,
-        dryWeight: data.dryWeight === '' ? undefined : data.dryWeight,
-        thcPercent: data.thcPercent === '' ? undefined : data.thcPercent,
-        cbdPercent: data.cbdPercent === '' ? undefined : data.cbdPercent,
-        qualityRating: data.qualityRating === '' ? undefined : data.qualityRating,
+        dryWeight: data.dryWeight === '' ? null : data.dryWeight,
+        hashYield: data.hashYield === '' ? null : data.hashYield,
+        thcPercent: data.thcPercent === '' ? null : data.thcPercent,
+        cbdPercent: data.cbdPercent === '' ? null : data.cbdPercent,
+        qualityRating: data.qualityRating === '' ? null : data.qualityRating,
       };
 
       await updateMutation.mutateAsync({ id: id!, data: updateData });
@@ -111,7 +112,7 @@ export default function HarvestDetailPage() {
     );
   }
 
-  const weightUnitLabel = harvest.weightUnit === 'GRAMS' ? 'g' : 'oz';
+  const weightUnitLabel = harvest.weightUnit?.toLowerCase() === 'grams' ? 'g' : 'oz';
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -212,14 +213,44 @@ export default function HarvestDetailPage() {
                     {harvest.dryWeight ? `${harvest.dryWeight} ${weightUnitLabel}` : 'Not yet recorded'}
                   </p>
                 </div>
+
+                {harvest.hashYield && (
+                  <div>
+                    <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                      <Scale className="h-4 w-4" />
+                      <span className="text-sm">Hash Yield</span>
+                    </div>
+                    <p className="text-lg font-semibold">
+                      {harvest.hashYield} g
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {harvest.dryWeight && harvest.wetWeight && (
-                <div className="pt-4 border-t">
-                  <div className="text-sm text-muted-foreground mb-1">Moisture Loss</div>
-                  <p className="text-lg font-semibold">
-                    {((1 - harvest.dryWeight / harvest.wetWeight) * 100).toFixed(1)}%
-                  </p>
+              {(harvest.dryWeight || harvest.hashYield) && harvest.wetWeight && (
+                <div className="pt-4 border-t space-y-2">
+                  {harvest.dryWeight && (
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Moisture Loss</div>
+                      <p className="text-lg font-semibold">
+                        {((1 - harvest.dryWeight / harvest.wetWeight) * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  )}
+                  {harvest.hashYield && (
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Hash Yield Percentage</div>
+                      <p className="text-lg font-semibold">
+                        {(() => {
+                          // Convert wet weight to grams if needed for calculation
+                          const wetWeightInGrams = harvest.weightUnit?.toLowerCase() === 'ounces'
+                            ? harvest.wetWeight * 28.3495
+                            : harvest.wetWeight;
+                          return ((harvest.hashYield / wetWeightInGrams) * 100).toFixed(2);
+                        })()}%
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

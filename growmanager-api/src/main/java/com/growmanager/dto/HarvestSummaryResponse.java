@@ -20,6 +20,7 @@ public class HarvestSummaryResponse {
     private Long totalPlantsHarvested;
     private BigDecimal totalWetWeight;
     private BigDecimal totalDryWeight;
+    private BigDecimal totalHashYield;
     private Double averageQuality;
     private List<HarvestResponse> harvests;
 }

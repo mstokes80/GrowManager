@@ -108,6 +108,30 @@ export function HarvestsTab({ growId }: HarvestsTabProps) {
                 {summary.averageQuality > 0 ? `${summary.averageQuality.toFixed(1)}/10` : 'N/A'}
               </p>
             </div>
+
+            {summary.totalHashYield > 0 && (
+              <>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Scale className="h-4 w-4" />
+                    <span className="text-sm">Total Hash Yield</span>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {summary.totalHashYield.toFixed(2)} g
+                  </p>
+                </div>
+
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Scale className="h-4 w-4" />
+                    <span className="text-sm">Hash Yield %</span>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {((summary.totalHashYield / summary.totalWetWeight) * 100).toFixed(2)}%
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -136,7 +160,7 @@ interface HarvestCardProps {
 }
 
 function HarvestCard({ harvest, onView }: HarvestCardProps) {
-  const weightUnitLabel = harvest.weightUnit === 'GRAMS' ? 'g' : 'oz';
+  const weightUnitLabel = harvest.weightUnit?.toLowerCase() === 'grams' ? 'g' : 'oz';
 
   return (
     <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors">

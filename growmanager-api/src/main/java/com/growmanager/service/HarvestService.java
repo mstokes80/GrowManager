@@ -74,6 +74,7 @@ public class HarvestService {
                 .harvestDate(request.getHarvestDate() != null ? request.getHarvestDate() : LocalDate.now())
                 .wetWeight(request.getWetWeight())
                 .dryWeight(request.getDryWeight())
+                .hashYield(request.getHashYield())
                 .weightUnit(request.getWeightUnit())
                 .thcPercent(request.getThcPercent())
                 .cbdPercent(request.getCbdPercent())
@@ -150,6 +151,7 @@ public class HarvestService {
         long totalPlantsHarvested = harvestRepository.countByGrowId(growId);
         BigDecimal totalWetWeight = harvestRepository.calculateTotalWetWeight(growId, WeightUnit.GRAMS);
         BigDecimal totalDryWeight = harvestRepository.calculateTotalDryWeight(growId, WeightUnit.GRAMS);
+        BigDecimal totalHashYield = harvestRepository.calculateTotalHashYield(growId);
         Double averageQuality = harvestRepository.calculateAverageQuality(growId);
 
         // If no harvests in grams, try ounces
@@ -168,6 +170,7 @@ public class HarvestService {
                 .totalPlantsHarvested(totalPlantsHarvested)
                 .totalWetWeight(totalWetWeight != null ? totalWetWeight : BigDecimal.ZERO)
                 .totalDryWeight(totalDryWeight != null ? totalDryWeight : BigDecimal.ZERO)
+                .totalHashYield(totalHashYield != null ? totalHashYield : BigDecimal.ZERO)
                 .averageQuality(averageQuality != null ? averageQuality : 0.0)
                 .harvests(harvestResponses)
                 .build();
@@ -218,25 +221,14 @@ public class HarvestService {
             throw new ResourceNotFoundException("Harvest not found");
         }
 
-        // Update only mutable fields
-        if (request.getDryWeight() != null) {
-            harvest.setDryWeight(request.getDryWeight());
-        }
-        if (request.getThcPercent() != null) {
-            harvest.setThcPercent(request.getThcPercent());
-        }
-        if (request.getCbdPercent() != null) {
-            harvest.setCbdPercent(request.getCbdPercent());
-        }
-        if (request.getTerpeneProfile() != null) {
-            harvest.setTerpeneProfile(request.getTerpeneProfile());
-        }
-        if (request.getQualityRating() != null) {
-            harvest.setQualityRating(request.getQualityRating());
-        }
-        if (request.getNotes() != null) {
-            harvest.setNotes(request.getNotes());
-        }
+        // Update mutable fields (including null to clear values)
+        harvest.setDryWeight(request.getDryWeight());
+        harvest.setHashYield(request.getHashYield());
+        harvest.setThcPercent(request.getThcPercent());
+        harvest.setCbdPercent(request.getCbdPercent());
+        harvest.setTerpeneProfile(request.getTerpeneProfile());
+        harvest.setQualityRating(request.getQualityRating());
+        harvest.setNotes(request.getNotes());
 
         Harvest updatedHarvest = harvestRepository.save(harvest);
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Grid3x3, User, Sprout } from 'lucide-react';
+import { Home, Grid3x3, User, Sprout, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -13,6 +13,7 @@ const navItems: NavItem[] = [
   { to: '/dashboard', icon: Home, label: 'Home' },
   { to: '/grows', icon: Grid3x3, label: 'Grows' },
   { to: '/cultivars', icon: Sprout, label: 'Cultivars' },
+  { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   { to: '/profile', icon: User, label: 'Profile' },
 ];
 
@@ -68,8 +69,9 @@ export function BottomNav() {
   return (
     <nav
       className={cn(
-        'fixed bottom-0 left-0 right-0 bg-background border-t border-border md:relative md:border-t-0 md:border-b z-50',
+        'fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50',
         'transition-transform duration-300',
+        'shadow-lg md:shadow-md',
         // Hide on mobile when keyboard is open
         isKeyboardOpen && 'translate-y-full md:translate-y-0'
       )}

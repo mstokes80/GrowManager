@@ -39,10 +39,28 @@ public class GrowResponse {
     private BigDecimal targetHumidityMin;
     private BigDecimal targetHumidityMax;
     private LocalDate expectedHarvestDate;
+    private BigDecimal canopySquareFt;
+    private LocalDate vegetativeDate;
+    private LocalDate flowerDate;
+    private List<LightEquipmentDTO> lights;
+    private String tempUom;
     private List<String> tags;
     private Long plantCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // Organic growing fields
+    private Boolean isOrganic;
+    private String soilSource;
+    private String soilTexture;
+    private BigDecimal organicMatterPercent;
+    private String baseNutrientProfile;
+    private Integer soilReusedCycles;
+    private Boolean mycorrhizaeAdded;
+    private List<String> microbeInoculants;
+    private String coverCropType;
+    private String mulchType;
+    private Boolean compostReused;
 
     /**
      * Converts a Grow entity to GrowResponse DTO.
@@ -67,7 +85,23 @@ public class GrowResponse {
                 .targetHumidityMin(grow.getTargetHumidityMin())
                 .targetHumidityMax(grow.getTargetHumidityMax())
                 .expectedHarvestDate(grow.getExpectedHarvestDate())
+                .canopySquareFt(grow.getCanopySquareFt())
+                .vegetativeDate(grow.getVegetativeDate())
+                .flowerDate(grow.getFlowerDate())
+                .lights(grow.getLights())
+                .tempUom(grow.getTempUom())
                 .tags(grow.getTags())
+                .isOrganic(grow.getIsOrganic())
+                .soilSource(grow.getSoilSource())
+                .soilTexture(grow.getSoilTexture())
+                .organicMatterPercent(grow.getOrganicMatterPercent())
+                .baseNutrientProfile(grow.getBaseNutrientProfile())
+                .soilReusedCycles(grow.getSoilReusedCycles())
+                .mycorrhizaeAdded(grow.getMycorrhizaeAdded())
+                .microbeInoculants(grow.getMicrobeInoculants())
+                .coverCropType(grow.getCoverCropType())
+                .mulchType(grow.getMulchType())
+                .compostReused(grow.getCompostReused())
                 .createdAt(grow.getCreatedAt())
                 .updatedAt(grow.getUpdatedAt())
                 .build();

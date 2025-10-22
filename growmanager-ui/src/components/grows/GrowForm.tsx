@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Grow, LightingType, MediumType } from '@/services/growsApi';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -14,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Plus, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -22,6 +23,14 @@ import {
   fromCelsius,
   toCelsius,
 } from '@/utils/temperatureUtils';
+
+// Light equipment validation schema
+const lightEquipmentSchema = z.object({
+  name: z.string().min(1, 'Light name is required'),
+  wattage: z
+    .number({ invalid_type_error: 'Wattage must be a number' })
+    .positive('Wattage must be positive'),
+});
 
 // Validation schema using Zod
 const growSchema = z.object({
@@ -48,8 +57,27 @@ const growSchema = z.object({
   targetHumidityMin: z.coerce.number().min(0, 'Min humidity must be at least 0%').max(100, 'Min humidity must not exceed 100%').optional().or(z.literal('')),
   targetHumidityMax: z.coerce.number().min(0, 'Max humidity must be at least 0%').max(100, 'Max humidity must not exceed 100%').optional().or(z.literal('')),
   expectedHarvestDate: z.string().optional(),
+  canopySquareFt: z.coerce.number().min(0, 'Canopy size must be at least 0').max(10000, 'Canopy size must not exceed 10000').optional().or(z.literal('')),
+  vegetativeDate: z.string().optional(),
+  flowerDate: z.string().optional(),
+  lights: z.array(lightEquipmentSchema).optional(),
+  tempUom: z.enum(['C', 'F'], {
+    errorMap: () => ({ message: 'Please select a temperature unit' }),
+  }).optional(),
   tags: z.string().optional(), // Comma-separated tags
   notes: z.string().max(1000, 'Notes must be 1000 characters or less').optional(),
+  // Organic growing fields
+  isOrganic: z.boolean().optional(),
+  soilSource: z.string().max(255, 'Soil source must be 255 characters or less').optional(),
+  soilTexture: z.string().max(100, 'Soil texture must be 100 characters or less').optional(),
+  organicMatterPercent: z.coerce.number().min(0, 'Organic matter must be at least 0%').max(100, 'Organic matter must not exceed 100%').optional().or(z.literal('')),
+  baseNutrientProfile: z.string().max(255, 'Base nutrient profile must be 255 characters or less').optional(),
+  soilReusedCycles: z.coerce.number().min(0, 'Soil reused cycles must be at least 0').optional().or(z.literal('')),
+  mycorrhizaeAdded: z.boolean().optional(),
+  microbeInoculants: z.string().optional(), // Comma-separated list
+  coverCropType: z.string().max(255, 'Cover crop type must be 255 characters or less').optional(),
+  mulchType: z.string().max(255, 'Mulch type must be 255 characters or less').optional(),
+  compostReused: z.boolean().optional(),
 });
 
 export type GrowFormData = z.infer<typeof growSchema>;
@@ -75,9 +103,9 @@ export function GrowForm({
   const isEditMode = !!grow;
 
   // Format date for input field (YYYY-MM-DD)
-  const formatDateForInput = (dateString?: string) => {
+  const formatDateForInput = (dateString?: string, defaultToToday = false) => {
     if (!dateString) {
-      return format(new Date(), 'yyyy-MM-dd');
+      return defaultToToday ? format(new Date(), 'yyyy-MM-dd') : '';
     }
     // If the date is already in YYYY-MM-DD format, return it directly
     // This avoids timezone issues when parsing LocalDate from backend
@@ -87,7 +115,7 @@ export function GrowForm({
     try {
       return format(new Date(dateString), 'yyyy-MM-dd');
     } catch (error) {
-      return format(new Date(), 'yyyy-MM-dd');
+      return defaultToToday ? format(new Date(), 'yyyy-MM-dd') : '';
     }
   };
 
@@ -96,12 +124,13 @@ export function GrowForm({
     handleSubmit,
     setValue,
     watch,
+    control,
     formState: { errors },
   } = useForm<GrowFormData>({
     resolver: zodResolver(growSchema),
     defaultValues: {
       name: grow?.name || '',
-      startDate: formatDateForInput(grow?.startDate),
+      startDate: formatDateForInput(grow?.startDate, true),
       status: grow?.status || 'planning',
       environmentType: grow?.environmentType || 'indoor',
       lightingType: grow?.lightingType,
@@ -111,43 +140,70 @@ export function GrowForm({
       targetTempMax: grow?.targetTempMax || ('' as any),
       targetHumidityMin: grow?.targetHumidityMin || ('' as any),
       targetHumidityMax: grow?.targetHumidityMax || ('' as any),
-      expectedHarvestDate: formatDateForInput(grow?.expectedHarvestDate) || '',
+      expectedHarvestDate: formatDateForInput(grow?.expectedHarvestDate, false),
+      canopySquareFt: grow?.canopySquareFt || ('' as any),
+      vegetativeDate: formatDateForInput(grow?.vegetativeDate, false),
+      flowerDate: formatDateForInput(grow?.flowerDate, false),
+      lights: grow?.lights || [],
+      tempUom: (grow?.tempUom === 'C' || grow?.tempUom === 'F') ? grow.tempUom : undefined,
       tags: grow?.tags?.join(', ') || '',
       notes: grow?.notes || '',
+      // Organic growing defaults
+      isOrganic: grow?.isOrganic || false,
+      soilSource: grow?.soilSource || '',
+      soilTexture: grow?.soilTexture || '',
+      organicMatterPercent: grow?.organicMatterPercent || ('' as any),
+      baseNutrientProfile: grow?.baseNutrientProfile || '',
+      soilReusedCycles: grow?.soilReusedCycles || ('' as any),
+      mycorrhizaeAdded: grow?.mycorrhizaeAdded || false,
+      microbeInoculants: grow?.microbeInoculants?.join(', ') || '',
+      coverCropType: grow?.coverCropType || '',
+      mulchType: grow?.mulchType || '',
+      compostReused: grow?.compostReused || false,
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'lights',
   });
 
   const selectedStatus = watch('status');
   const selectedEnvironmentType = watch('environmentType');
   const selectedLightingType = watch('lightingType');
   const selectedMediumType = watch('mediumType');
+  const isOrganic = watch('isOrganic');
 
-  // Temperature unit state (defaults to Celsius)
-  const [tempUnit, setTempUnit] = useState<TemperatureUnit>('celsius');
+  // Temperature unit state (defaults to Celsius, or from database)
+  const [tempUnit, setTempUnit] = useState<TemperatureUnit>(
+    grow?.tempUom === 'F' ? 'fahrenheit' : 'celsius'
+  );
 
   // Watch temperature values
   const targetTempMin = watch('targetTempMin');
   const targetTempMax = watch('targetTempMax');
 
-  // Display temperature values in selected unit
-  const displayTempMin = tempUnit === 'fahrenheit' && targetTempMin !== '' && targetTempMin !== undefined
-    ? fromCelsius(Number(targetTempMin), 'fahrenheit')
-    : targetTempMin;
+  // Handle temperature unit toggle - convert existing values
+  const handleTempUnitChange = (newUnit: TemperatureUnit) => {
+    const newUomValue = newUnit === 'celsius' ? 'C' : 'F';
 
-  const displayTempMax = tempUnit === 'fahrenheit' && targetTempMax !== '' && targetTempMax !== undefined
-    ? fromCelsius(Number(targetTempMax), 'fahrenheit')
-    : targetTempMax;
-
-  // Handle temperature input changes
-  const handleTempChange = (field: 'targetTempMin' | 'targetTempMax', value: string) => {
-    if (value === '') {
-      setValue(field, '' as any);
-      return;
+    // Convert existing temperature values when switching units
+    if (targetTempMin !== '' && targetTempMin !== undefined) {
+      const convertedMin = newUnit === 'celsius'
+        ? toCelsius(Number(targetTempMin), tempUnit)
+        : fromCelsius(Number(targetTempMin), tempUnit);
+      setValue('targetTempMin', convertedMin as any);
     }
-    const numValue = parseFloat(value);
-    // Convert to Celsius for storage if in Fahrenheit mode
-    const celsiusValue = toCelsius(numValue, tempUnit);
-    setValue(field, celsiusValue as any);
+
+    if (targetTempMax !== '' && targetTempMax !== undefined) {
+      const convertedMax = newUnit === 'celsius'
+        ? toCelsius(Number(targetTempMax), tempUnit)
+        : fromCelsius(Number(targetTempMax), tempUnit);
+      setValue('targetTempMax', convertedMax as any);
+    }
+
+    setTempUnit(newUnit);
+    setValue('tempUom', newUomValue);
   };
 
   return (
@@ -295,6 +351,83 @@ export function GrowForm({
           )}
         </div>
 
+        {/* Light Equipment */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>Light Equipment</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => append({ name: '', wattage: 0 })}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Light
+            </Button>
+          </div>
+
+          {fields.length > 0 && (
+            <div className="space-y-3">
+              {fields.map((field, index) => (
+                <div key={field.id} className="flex gap-2 items-start p-3 border rounded-md bg-muted/30">
+                  <div className="flex-1 grid grid-cols-2 gap-2">
+                    <div>
+                      <Label htmlFor={`lights.${index}.name`} className="text-sm">
+                        Name
+                      </Label>
+                      <Input
+                        id={`lights.${index}.name`}
+                        placeholder="e.g., Spider Farmer SF4000"
+                        {...register(`lights.${index}.name` as const)}
+                        aria-invalid={!!errors.lights?.[index]?.name}
+                      />
+                      {errors.lights?.[index]?.name && (
+                        <p className="text-sm text-destructive mt-1">
+                          {errors.lights[index]?.name?.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor={`lights.${index}.wattage`} className="text-sm">
+                        Wattage
+                      </Label>
+                      <Input
+                        id={`lights.${index}.wattage`}
+                        type="number"
+                        step="1"
+                        placeholder="e.g., 480"
+                        {...register(`lights.${index}.wattage` as const, { valueAsNumber: true })}
+                        aria-invalid={!!errors.lights?.[index]?.wattage}
+                      />
+                      {errors.lights?.[index]?.wattage && (
+                        <p className="text-sm text-destructive mt-1">
+                          {errors.lights[index]?.wattage?.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="mt-6"
+                    onClick={() => remove(index)}
+                    aria-label="Remove light"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {fields.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No light equipment added yet. Click "Add Light" to add your grow lights.
+            </p>
+          )}
+        </div>
+
         {/* Medium Type Field */}
         <div className="space-y-2">
           <Label htmlFor="mediumType">Growing Medium</Label>
@@ -361,7 +494,7 @@ export function GrowForm({
                   'h-7 px-3 text-xs',
                   tempUnit === 'celsius' && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
                 )}
-                onClick={() => setTempUnit('celsius')}
+                onClick={() => handleTempUnitChange('celsius')}
               >
                 °C
               </Button>
@@ -373,7 +506,7 @@ export function GrowForm({
                   'h-7 px-3 text-xs',
                   tempUnit === 'fahrenheit' && 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground'
                 )}
-                onClick={() => setTempUnit('fahrenheit')}
+                onClick={() => handleTempUnitChange('fahrenheit')}
               >
                 °F
               </Button>
@@ -389,8 +522,7 @@ export function GrowForm({
                 type="number"
                 step="0.1"
                 placeholder={tempUnit === 'celsius' ? 'e.g., 20' : 'e.g., 68'}
-                value={displayTempMin === '' ? '' : displayTempMin}
-                onChange={(e) => handleTempChange('targetTempMin', e.target.value)}
+                {...register('targetTempMin')}
                 aria-invalid={!!errors.targetTempMin}
               />
               {errors.targetTempMin && (
@@ -409,8 +541,7 @@ export function GrowForm({
                 type="number"
                 step="0.1"
                 placeholder={tempUnit === 'celsius' ? 'e.g., 26' : 'e.g., 79'}
-                value={displayTempMax === '' ? '' : displayTempMax}
-                onChange={(e) => handleTempChange('targetTempMax', e.target.value)}
+                {...register('targetTempMax')}
                 aria-invalid={!!errors.targetTempMax}
               />
               {errors.targetTempMax && (
@@ -496,6 +627,68 @@ export function GrowForm({
           </p>
         </div>
 
+        {/* Canopy Square Footage */}
+        <div className="space-y-2">
+          <Label htmlFor="canopySquareFt">Canopy Size (sq ft)</Label>
+          <Input
+            id="canopySquareFt"
+            type="number"
+            step="0.1"
+            placeholder="e.g., 16"
+            {...register('canopySquareFt')}
+            aria-invalid={!!errors.canopySquareFt}
+          />
+          {errors.canopySquareFt && (
+            <p className="text-sm text-destructive flex items-center gap-1">
+              <AlertCircle className="h-4 w-4" />
+              {errors.canopySquareFt.message}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Optional grow area size for yield per square foot calculations
+          </p>
+        </div>
+
+        {/* Phase Transition Dates */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="vegetativeDate">Vegetative Date</Label>
+            <Input
+              id="vegetativeDate"
+              type="date"
+              {...register('vegetativeDate')}
+              aria-invalid={!!errors.vegetativeDate}
+            />
+            {errors.vegetativeDate && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.vegetativeDate.message}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              When grow transitions to veg stage
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="flowerDate">Flower Date</Label>
+            <Input
+              id="flowerDate"
+              type="date"
+              {...register('flowerDate')}
+              aria-invalid={!!errors.flowerDate}
+            />
+            {errors.flowerDate && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {errors.flowerDate.message}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              When grow transitions to flower stage
+            </p>
+          </div>
+        </div>
+
         {/* Tags */}
         <div className="space-y-2">
           <Label htmlFor="tags">Tags</Label>
@@ -516,6 +709,215 @@ export function GrowForm({
             Enter tags separated by commas for easy categorization
           </p>
         </div>
+      </div>
+
+      {/* Organic Growing Section */}
+      <div className="space-y-4 pt-4 border-t">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Organic Growing</h3>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="isOrganic"
+              checked={isOrganic}
+              onChange={(e) => setValue('isOrganic', e.target.checked)}
+            />
+            <Label htmlFor="isOrganic" className="text-sm font-normal cursor-pointer">
+              Enable organic tracking
+            </Label>
+          </div>
+        </div>
+
+        {isOrganic && (
+          <div className="space-y-4 pl-4 border-l-2 border-muted">
+            {/* Soil Characteristics */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-muted-foreground">Soil Characteristics</h4>
+
+              <div className="space-y-2">
+                <Label htmlFor="soilSource">Soil Source</Label>
+                <Input
+                  id="soilSource"
+                  type="text"
+                  placeholder="e.g., Coast of Maine Stonington Blend"
+                  {...register('soilSource')}
+                  aria-invalid={!!errors.soilSource}
+                />
+                {errors.soilSource && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.soilSource.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="soilTexture">Soil Texture</Label>
+                <Input
+                  id="soilTexture"
+                  type="text"
+                  placeholder="e.g., loamy, sandy, clay"
+                  {...register('soilTexture')}
+                  aria-invalid={!!errors.soilTexture}
+                />
+                {errors.soilTexture && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.soilTexture.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="organicMatterPercent">Organic Matter (%)</Label>
+                <Input
+                  id="organicMatterPercent"
+                  type="number"
+                  step="0.1"
+                  placeholder="e.g., 25"
+                  {...register('organicMatterPercent')}
+                  aria-invalid={!!errors.organicMatterPercent}
+                />
+                {errors.organicMatterPercent && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.organicMatterPercent.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="baseNutrientProfile">Base Nutrient Profile</Label>
+                <Input
+                  id="baseNutrientProfile"
+                  type="text"
+                  placeholder="e.g., 3-1-2 (compost base)"
+                  {...register('baseNutrientProfile')}
+                  aria-invalid={!!errors.baseNutrientProfile}
+                />
+                {errors.baseNutrientProfile && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.baseNutrientProfile.message}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  NPK profile from soil or compost
+                </p>
+              </div>
+            </div>
+
+            {/* Soil Reuse */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-muted-foreground">Soil Reuse</h4>
+              <div className="space-y-2">
+                <Label htmlFor="soilReusedCycles">Soil Reused Cycles</Label>
+                <Input
+                  id="soilReusedCycles"
+                  type="number"
+                  placeholder="e.g., 2"
+                  {...register('soilReusedCycles')}
+                  aria-invalid={!!errors.soilReusedCycles}
+                />
+                {errors.soilReusedCycles && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.soilReusedCycles.message}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Number of times this soil has been reused
+                </p>
+              </div>
+            </div>
+
+            {/* Beneficial Biology */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-muted-foreground">Beneficial Biology</h4>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="mycorrhizaeAdded"
+                  checked={watch('mycorrhizaeAdded')}
+                  onChange={(e) => setValue('mycorrhizaeAdded', e.target.checked)}
+                />
+                <Label htmlFor="mycorrhizaeAdded" className="text-sm font-normal cursor-pointer">
+                  Mycorrhizal fungi added
+                </Label>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="microbeInoculants">Microbe Inoculants</Label>
+                <Input
+                  id="microbeInoculants"
+                  type="text"
+                  placeholder="e.g., Recharge, Mammoth P"
+                  {...register('microbeInoculants')}
+                  aria-invalid={!!errors.microbeInoculants}
+                />
+                {errors.microbeInoculants && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.microbeInoculants.message}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Enter inoculants separated by commas
+                </p>
+              </div>
+            </div>
+
+            {/* Cover Crops and Mulching */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-muted-foreground">Cover Crops & Mulching</h4>
+
+              <div className="space-y-2">
+                <Label htmlFor="coverCropType">Cover Crop Type</Label>
+                <Input
+                  id="coverCropType"
+                  type="text"
+                  placeholder="e.g., clover, rye"
+                  {...register('coverCropType')}
+                  aria-invalid={!!errors.coverCropType}
+                />
+                {errors.coverCropType && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.coverCropType.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mulchType">Mulch Type</Label>
+                <Input
+                  id="mulchType"
+                  type="text"
+                  placeholder="e.g., straw, wood chips"
+                  {...register('mulchType')}
+                  aria-invalid={!!errors.mulchType}
+                />
+                {errors.mulchType && (
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.mulchType.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Compost Reuse */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="compostReused"
+                checked={watch('compostReused')}
+                onChange={(e) => setValue('compostReused', e.target.checked)}
+              />
+              <Label htmlFor="compostReused" className="text-sm font-normal cursor-pointer">
+                Compost reused from previous grows
+              </Label>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Notes Section */}

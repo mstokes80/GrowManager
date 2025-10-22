@@ -58,6 +58,16 @@ public interface HarvestRepository extends JpaRepository<Harvest, UUID> {
                                        @Param("weightUnit") Harvest.WeightUnit weightUnit);
 
     /**
+     * Calculate total hash yield for a grow (always in grams).
+     *
+     * @param growId the grow ID
+     * @return total hash yield in grams, or null if no harvests with hash yield
+     */
+    @Query("SELECT SUM(h.hashYield) FROM Harvest h WHERE h.grow.id = :growId " +
+           "AND h.hashYield IS NOT NULL")
+    BigDecimal calculateTotalHashYield(@Param("growId") UUID growId);
+
+    /**
      * Calculate average quality rating for a grow.
      *
      * @param growId the grow ID

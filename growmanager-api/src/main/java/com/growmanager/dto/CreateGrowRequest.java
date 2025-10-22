@@ -58,5 +58,49 @@ public class CreateGrowRequest {
 
     private LocalDate expectedHarvestDate;
 
+    @DecimalMin(value = "0.0", message = "Canopy square footage must be at least 0")
+    @DecimalMax(value = "10000.0", message = "Canopy square footage must not exceed 10000")
+    private BigDecimal canopySquareFt;
+
+    private LocalDate vegetativeDate;
+
+    private LocalDate flowerDate;
+
+    private List<LightEquipmentDTO> lights;
+
+    @Size(max = 1, message = "Temperature unit must be a single character")
+    private String tempUom;
+
     private List<String> tags;
+
+    // Organic growing fields
+    private Boolean isOrganic;
+
+    @Size(max = 255, message = "Soil source must not exceed 255 characters")
+    private String soilSource;
+
+    @Size(max = 100, message = "Soil texture must not exceed 100 characters")
+    private String soilTexture;
+
+    @DecimalMin(value = "0.0", message = "Organic matter percent must be at least 0%")
+    @DecimalMax(value = "100.0", message = "Organic matter percent must not exceed 100%")
+    private BigDecimal organicMatterPercent;
+
+    @Size(max = 255, message = "Base nutrient profile must not exceed 255 characters")
+    private String baseNutrientProfile;
+
+    @Min(value = 0, message = "Soil reused cycles must be at least 0")
+    private Integer soilReusedCycles;
+
+    private Boolean mycorrhizaeAdded;
+
+    private List<String> microbeInoculants;
+
+    @Size(max = 255, message = "Cover crop type must not exceed 255 characters")
+    private String coverCropType;
+
+    @Size(max = 255, message = "Mulch type must not exceed 255 characters")
+    private String mulchType;
+
+    private Boolean compostReused;
 }

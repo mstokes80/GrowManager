@@ -109,6 +109,13 @@
             <version>0.4.20</version>
         </dependency>
 
+        <!-- CSV parsing library -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.10.0</version>
+        </dependency>
+
         <!-- JWT for authentication -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

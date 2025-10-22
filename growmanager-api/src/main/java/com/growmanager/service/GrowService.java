@@ -74,7 +74,23 @@ public class GrowService {
                 .targetHumidityMin(request.getTargetHumidityMin())
                 .targetHumidityMax(request.getTargetHumidityMax())
                 .expectedHarvestDate(request.getExpectedHarvestDate())
+                .canopySquareFt(request.getCanopySquareFt())
+                .vegetativeDate(request.getVegetativeDate())
+                .flowerDate(request.getFlowerDate())
+                .lights(request.getLights())
+                .tempUom(request.getTempUom())
                 .tags(request.getTags())
+                .isOrganic(request.getIsOrganic())
+                .soilSource(request.getSoilSource())
+                .soilTexture(request.getSoilTexture())
+                .organicMatterPercent(request.getOrganicMatterPercent())
+                .baseNutrientProfile(request.getBaseNutrientProfile())
+                .soilReusedCycles(request.getSoilReusedCycles())
+                .mycorrhizaeAdded(request.getMycorrhizaeAdded())
+                .microbeInoculants(request.getMicrobeInoculants())
+                .coverCropType(request.getCoverCropType())
+                .mulchType(request.getMulchType())
+                .compostReused(request.getCompostReused())
                 .status(GrowStatus.PLANNING)
                 .build();
 
@@ -205,8 +221,57 @@ public class GrowService {
         if (request.getExpectedHarvestDate() != null) {
             grow.setExpectedHarvestDate(request.getExpectedHarvestDate());
         }
+        if (request.getCanopySquareFt() != null) {
+            grow.setCanopySquareFt(request.getCanopySquareFt());
+        }
+        if (request.getVegetativeDate() != null) {
+            grow.setVegetativeDate(request.getVegetativeDate());
+        }
+        if (request.getFlowerDate() != null) {
+            grow.setFlowerDate(request.getFlowerDate());
+        }
+        if (request.getLights() != null) {
+            grow.setLights(request.getLights());
+        }
+        if (request.getTempUom() != null) {
+            grow.setTempUom(request.getTempUom());
+        }
         if (request.getTags() != null) {
             grow.setTags(request.getTags());
+        }
+        // Update organic growing fields
+        if (request.getIsOrganic() != null) {
+            grow.setIsOrganic(request.getIsOrganic());
+        }
+        if (request.getSoilSource() != null) {
+            grow.setSoilSource(request.getSoilSource());
+        }
+        if (request.getSoilTexture() != null) {
+            grow.setSoilTexture(request.getSoilTexture());
+        }
+        if (request.getOrganicMatterPercent() != null) {
+            grow.setOrganicMatterPercent(request.getOrganicMatterPercent());
+        }
+        if (request.getBaseNutrientProfile() != null) {
+            grow.setBaseNutrientProfile(request.getBaseNutrientProfile());
+        }
+        if (request.getSoilReusedCycles() != null) {
+            grow.setSoilReusedCycles(request.getSoilReusedCycles());
+        }
+        if (request.getMycorrhizaeAdded() != null) {
+            grow.setMycorrhizaeAdded(request.getMycorrhizaeAdded());
+        }
+        if (request.getMicrobeInoculants() != null) {
+            grow.setMicrobeInoculants(request.getMicrobeInoculants());
+        }
+        if (request.getCoverCropType() != null) {
+            grow.setCoverCropType(request.getCoverCropType());
+        }
+        if (request.getMulchType() != null) {
+            grow.setMulchType(request.getMulchType());
+        }
+        if (request.getCompostReused() != null) {
+            grow.setCompostReused(request.getCompostReused());
         }
 
         grow = growRepository.save(grow);

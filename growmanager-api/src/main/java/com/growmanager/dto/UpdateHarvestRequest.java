@@ -21,6 +21,9 @@ public class UpdateHarvestRequest {
     @DecimalMin(value = "0.01", message = "Dry weight must be greater than 0")
     private BigDecimal dryWeight;
 
+    @DecimalMin(value = "0.01", message = "Hash yield must be greater than 0")
+    private BigDecimal hashYield;
+
     @DecimalMin(value = "0.0", message = "THC percentage must be at least 0")
     @DecimalMax(value = "100.0", message = "THC percentage must not exceed 100")
     private BigDecimal thcPercent;
